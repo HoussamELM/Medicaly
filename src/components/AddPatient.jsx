@@ -29,14 +29,10 @@ const AddPatient = ({ onPatientAdded }) => {
         }
 
         try {
-            await addDoc(collection(db, 'appointments'), {
+            await addDoc(collection(db, 'patients'), {
                 patientName: formData.patientName,
                 moroccanId: formData.moroccanId,
-                doctorId: currentUser.uid,
-                appointmentDate: null,
-                done: false,
-                notes: '',
-                prescribedMedicine: ''
+                doctorId: currentUser.uid
             });
 
             alert('Patient added successfully!');

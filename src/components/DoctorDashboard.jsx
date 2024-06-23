@@ -1,3 +1,4 @@
+// src/components/DoctorDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tabs, Tab, Button } from '@mui/material';
 import { db } from '../firebase';
@@ -11,7 +12,8 @@ import './DoctorDashboard.css';
 
 const DoctorDashboard = () => {
     const { currentUser } = useAuth();
-    const [patientsWithAppointments, setPatientsWithAppointments] = useState([]);
+    const [patients, setPatients] = useState([]);
+    const [appointments, setAppointments] = useState([]);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [tabValue, setTabValue] = useState(0);
     const [showAddPatient, setShowAddPatient] = useState(false);
@@ -19,39 +21,41 @@ const DoctorDashboard = () => {
 
     useEffect(() => {
         if (!currentUser) return;
+        console.log("Current User:", currentUser);
 
-        const fetchAppointments = async () => {
+        const fetchPatients = async () => {
             try {
-                const q = query(collection(db, 'appointments'), where('doctorId', '==', currentUser.uid));
-                const querySnapshot = await getDocs(q);
-                const appointments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Fetching patients...");
+                const patientQuery = query(collection(db, 'patients'), where('doctorId', '==', currentUser.uid));
+                const patientSnapshot = await getDocs(patientQuery);
+                const patientsList = patientSnapshot.docs.map(doc => doc.data());
+                console.log("Fetched patients:", patientsList);
 
-                // Process appointments to get unique patients
-                const patientMap = {};
-                appointments.forEach(app => {
-                    if (!patientMap[app.moroccanId]) {
-                        patientMap[app.moroccanId] = {
-                            patientName: app.patientName,
-                            moroccanId: app.moroccanId,
-                            appointments: []
-                        };
-                    }
-                    patientMap[app.moroccanId].appointments.push(app);
-                });
-
-                const patientsList = Object.values(patientMap);
-                setPatientsWithAppointments(patientsList);
-
+                setPatients(patientsList);
                 setExportData(patientsList.map(patient => ({
                     PatientName: patient.patientName,
-                    MoroccanID: patient.moroccanId,
-                    AppointmentCount: patient.appointments.length
+                    MoroccanID: patient.moroccanId
                 })));
             } catch (error) {
-                console.error('Error fetching patients: ', error);
+                console.error('Error fetching patients:', error);
             }
         };
 
+        const fetchAppointments = async () => {
+            try {
+                console.log("Fetching appointments...");
+                const appointmentQuery = query(collection(db, 'appointments'), where('doctorId', '==', currentUser.uid));
+                const appointmentSnapshot = await getDocs(appointmentQuery);
+                const appointmentsList = appointmentSnapshot.docs.map(doc => doc.data());
+                console.log("Fetched appointments:", appointmentsList);
+
+                setAppointments(appointmentsList);
+            } catch (error) {
+                console.error('Error fetching appointments:', error);
+            }
+        };
+
+        fetchPatients();
         fetchAppointments();
     }, [currentUser]);
 
@@ -73,6 +77,7 @@ const DoctorDashboard = () => {
                     <Typography variant="h4" mb={2} textAlign="center">Doctor Dashboard</Typography>
                     <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
                         <Tab label="Patients" />
+                        <Tab label="Appointments" />
                         <Tab label="Calendar" />
                     </Tabs>
                     {tabValue === 0 ? (
@@ -89,17 +94,16 @@ const DoctorDashboard = () => {
                                 </Button>
                             </Box>
                             {showAddPatient && <AddPatient onPatientAdded={handlePatientAdded} />}
-                            <TableContainer component={Paper} sx={{ mt: 2 }}>
+                            <TableContainer component={Paper}>
                                 <Table>
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>Patient Name</TableCell>
                                             <TableCell>Moroccan ID</TableCell>
-                                            <TableCell>Appointment Count</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {patientsWithAppointments.map((patient) => (
+                                        {patients.map((patient) => (
                                             <TableRow
                                                 key={patient.moroccanId}
                                                 className="clickable-row"
@@ -107,7 +111,34 @@ const DoctorDashboard = () => {
                                             >
                                                 <TableCell>{patient.patientName}</TableCell>
                                                 <TableCell>{patient.moroccanId}</TableCell>
-                                                <TableCell>{patient.appointments.length}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </>
+                    ) : tabValue === 1 ? (
+                        <>
+                            <Typography variant="subtitle1" mb={2} textAlign="center">
+                                All Appointments
+                            </Typography>
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Patient Name</TableCell>
+                                            <TableCell>Moroccan ID</TableCell>
+                                            <TableCell>Appointment Date</TableCell>
+                                            <TableCell>Status</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {appointments.map((appointment) => (
+                                            <TableRow key={appointment.id} className="clickable-row">
+                                                <TableCell>{appointment.patientName}</TableCell>
+                                                <TableCell>{appointment.moroccanId}</TableCell>
+                                                <TableCell>{appointment.appointmentDate ? appointment.appointmentDate.toDate().toLocaleString() : 'No Appointments'}</TableCell>
+                                                <TableCell>{appointment.done ? 'Done' : 'Pending'}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

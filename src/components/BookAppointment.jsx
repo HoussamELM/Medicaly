@@ -3,7 +3,7 @@ import { TextField, Button, Typography, Box, MenuItem, FormControl, InputLabel, 
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, Timestamp, doc, setDoc } from 'firebase/firestore';
 
 const BookAppointment = () => {
     const [formData, setFormData] = useState({
@@ -36,8 +36,8 @@ const BookAppointment = () => {
                     const q = query(
                         collection(db, 'appointments'),
                         where('doctorId', '==', formData.doctorId),
-                        where('appointmentDate', '>=', Timestamp.fromDate(new Date(today))),
-                        where('appointmentDate', '<=', Timestamp.fromDate(new Date(oneWeekFromNow)))
+                        where('appointmentDate', '>=', Timestamp.fromDate(new Date())),
+                        where('appointmentDate', '<=', Timestamp.fromDate(new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000))) // Within one week
                     );
                     const querySnapshot = await getDocs(q);
                     const times = querySnapshot.docs.map(doc => doc.data().appointmentDate.toDate().getTime());
@@ -50,10 +50,6 @@ const BookAppointment = () => {
         fetchBookedTimes();
     }, [formData.doctorId]);
 
-    const today = new Date();
-    const oneWeekFromNow = new Date();
-    oneWeekFromNow.setDate(today.getDate() + 7);
-
     const handleDateChange = (date) => {
         setFormData({
             ...formData,
@@ -63,7 +59,7 @@ const BookAppointment = () => {
 
     const filterPassedTime = (time) => {
         const selectedDate = new Date(time);
-        return selectedDate.getTime() >= today.getTime() && selectedDate.getTime() <= oneWeekFromNow.getTime();
+        return selectedDate.getTime() >= new Date().getTime() && selectedDate.getTime() <= new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).getTime();
     };
 
     const filterTime = (date) => {
@@ -74,7 +70,7 @@ const BookAppointment = () => {
 
         const isUnavailable = bookedTimes.includes(time);
 
-        return hours >= 8 && hours <= 17 && minutes % 30 === 0 && !isUnavailable;
+        return hours >= 8 && hours < 17 && minutes % 30 === 0 && !isUnavailable;
     };
 
     const handleChange = (e) => {
@@ -95,22 +91,27 @@ const BookAppointment = () => {
 
             const appointmentDate = Timestamp.fromDate(formData.appointmentDate);
 
-            // Validate patient name against ID
+            // Check for existing patient
             const patientQuery = query(
                 collection(db, 'patients'),
                 where('moroccanId', '==', formData.moroccanId)
             );
             const patientSnapshot = await getDocs(patientQuery);
 
-            if (patientSnapshot.empty) {
-                setError('No patient found with the given Moroccan ID.');
-                return;
-            }
-
-            const patientData = patientSnapshot.docs[0].data();
-            if (patientData.patientName !== formData.patientName) {
-                setError('The patient name does not match the Moroccan ID.');
-                return;
+            if (!patientSnapshot.empty) {
+                const patientData = patientSnapshot.docs[0].data();
+                if (patientData.patientName !== formData.patientName) {
+                    setError('The patient name does not match the Moroccan ID.');
+                    return;
+                }
+            } else {
+                // Add patient if not existing
+                const newPatient = {
+                    patientName: formData.patientName,
+                    moroccanId: formData.moroccanId,
+                    doctorId: formData.doctorId
+                };
+                await setDoc(doc(db, 'patients', formData.moroccanId), newPatient);
             }
 
             // Check for existing pending appointments
@@ -199,8 +200,8 @@ const BookAppointment = () => {
                         onChange={handleDateChange}
                         showTimeSelect
                         filterTime={filterTime}
-                        minDate={today}
-                        maxDate={oneWeekFromNow}
+                        minDate={new Date()}
+                        maxDate={new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)} // Limit to one week
                         dateFormat="MMMM d, yyyy h:mm aa"
                         timeFormat="HH:mm"
                         timeIntervals={30}
