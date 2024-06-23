@@ -4,7 +4,7 @@ import { CssBaseline, Container, ThemeProvider, createTheme } from '@mui/materia
 import LandingPage from './components/LandingPage';
 import BookAppointment from './components/BookAppointment';
 import DoctorLogin from './components/DoctorLogin';
-import DoctorDashboard from './components/DoctorDashboard';
+import DoctorDashboard from './components/DoctorDashboard/DoctorDashboard';
 import DoctorSignup from './components/DoctorSignup';
 import Home from './components/Home';
 import { AuthProvider } from './auth/AuthProvider';

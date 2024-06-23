@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../../auth/AuthProvider';
 import './CalendarView.css';
 
 const CalendarView = () => {
