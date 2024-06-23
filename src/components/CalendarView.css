@@ -1,0 +1,5 @@
+/* src/components/CalendarView.css */
+.done-event .fc-event-title {
+  text-decoration: line-through;
+  color: gray;
+}
