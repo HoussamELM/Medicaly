@@ -200,10 +200,7 @@ const DoctorDashboard = () => {
 
                     {tabValue === 0 && (
                         <>
-                            <Typography variant="subtitle1" mb={2} textAlign="center">
-                                Click on a patient row to see their history
-                            </Typography>
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} className="mt-8">
                                 <CSVLink data={exportData} filename={"patients_data.csv"}>
                                     <Button variant="contained" color="primary">Export Data as CSV</Button>
                                 </CSVLink>

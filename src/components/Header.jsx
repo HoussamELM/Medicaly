@@ -17,12 +17,12 @@ const Header = () => {
         <AppBar position="static" sx={{ mb: 4 }}>
             <Toolbar>
                 <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                    Doctor Management System
+                    Medicaly
                 </Typography>
                 {currentUser && (
                     <Box>
                         <Typography variant="body1" sx={{ display: 'inline', mr: 2 }}>
-                            Signed in as {currentUser.email}
+                            Signed in as Dr.{currentUser.email.split('@')[0]}
                         </Typography>
                         <Button color="inherit" onClick={handleLogout}>Logout</Button>
                     </Box>
