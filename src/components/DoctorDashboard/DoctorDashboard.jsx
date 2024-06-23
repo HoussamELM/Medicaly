@@ -249,10 +249,7 @@ const DoctorDashboard = () => {
 
                     {tabValue === 0 && (
                         <>
-                            <Typography variant="subtitle1" mb={2} textAlign="center">
-                                Cliquez sur une ligne de patient pour voir leur historique
-                            </Typography>
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} className="mt-8">
                                 <CSVLink data={exportData} filename={"patients_data.csv"}>
                                     <Button variant="contained" color="primary">Exporter les données en CSV</Button>
                                 </CSVLink>
@@ -284,18 +281,19 @@ const DoctorDashboard = () => {
                     )}
 
                     {tabValue === 1 && (
-                        <>
-                            <Typography variant="subtitle1" mb={2} textAlign="center">
-                                Tous les rendez-vous
-                            </Typography>
+                        <div className="mt-8">
                             <AppointmentsList
                                 appointments={appointments}
                                 handleEditAppointment={handleEditAppointment}
                             />
-                        </>
+                        </div>
                     )}
 
-                    {tabValue === 2 && <CalendarView />}
+                    {tabValue === 2 && (
+                    <div className="mt-8">
+                    <CalendarView/>
+                    </div>
+                    )}
                 </>
             )}
 
