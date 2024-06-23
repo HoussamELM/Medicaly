@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tabs, Tab, Button, IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from '@mui/material';
+import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tabs, Tab, Button, IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import { db } from '../firebase';
-import { collection, getDocs, query, where, runTransaction, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, runTransaction, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../auth/AuthProvider';
 import PatientDetails from './PatientDetails';
 import CalendarView from './CalendarView';
 import AddPatient from './AddPatient';
-import { CSVLink } from 'react-csv';
+import { CSVLink } from "react-csv";
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import './DoctorDashboard.css';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const DoctorDashboard = () => {
     const { currentUser } = useAuth();
@@ -19,8 +21,10 @@ const DoctorDashboard = () => {
     const [showAddPatient, setShowAddPatient] = useState(false);
     const [exportData, setExportData] = useState([]);
     const [editPatientData, setEditPatientData] = useState(null);
+    const [editAppointmentData, setEditAppointmentData] = useState(null);
     const [showEditPatientDialog, setShowEditPatientDialog] = useState(false);
     const [showDeletePatientDialog, setShowDeletePatientDialog] = useState(false);
+    const [showEditAppointmentDialog, setShowEditAppointmentDialog] = useState(false);
 
     useEffect(() => {
         const fetchPatients = async () => {
@@ -130,6 +134,41 @@ const DoctorDashboard = () => {
         }
     };
 
+    const handleEditAppointment = (appointment) => {
+        setEditAppointmentData(appointment);
+        setShowEditAppointmentDialog(true);
+    };
+
+    const handleCloseEditAppointmentDialog = () => {
+        setShowEditAppointmentDialog(false);
+        setEditAppointmentData(null);
+    };
+
+    const handleSaveEditAppointment = async () => {
+        if (!editAppointmentData) return;
+
+        try {
+            const appointmentDocRef = doc(db, 'appointments', editAppointmentData.id);
+            await updateDoc(appointmentDocRef, {
+                appointmentDate: Timestamp.fromDate(editAppointmentData.appointmentDate),
+                done: editAppointmentData.done,
+                notes: editAppointmentData.notes,
+                prescribedMedicine: editAppointmentData.prescribedMedicine
+            });
+
+            alert('Appointment updated successfully!');
+            setShowEditAppointmentDialog(false);
+            setEditAppointmentData(null);
+
+            // Refresh appointments
+            const appointmentQuery = query(collection(db, 'appointments'), where('doctorId', '==', currentUser.uid));
+            const appointmentSnapshot = await getDocs(appointmentQuery);
+            setAppointments(appointmentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        } catch (error) {
+            console.error('Error updating appointment:', error);
+        }
+    };
+
     return (
         <Box sx={{ mt: 8 }}>
             {
@@ -217,6 +256,7 @@ const DoctorDashboard = () => {
                                                 <TableCell>Moroccan ID</TableCell>
                                                 <TableCell>Appointment Date</TableCell>
                                                 <TableCell>Status</TableCell>
+                                                <TableCell>Actions</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -226,6 +266,14 @@ const DoctorDashboard = () => {
                                                     <TableCell>{appointment.moroccanId}</TableCell>
                                                     <TableCell>{appointment.appointmentDate ? appointment.appointmentDate.toDate().toLocaleString() : 'No Appointments'}</TableCell>
                                                     <TableCell>{appointment.done ? 'Done' : 'Pending'}</TableCell>
+                                                    <TableCell>
+                                                        <IconButton onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditAppointment(appointment);
+                                                        }}>
+                                                            <EditIcon />
+                                                        </IconButton>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -273,6 +321,69 @@ const DoctorDashboard = () => {
                 <DialogActions>
                     <Button onClick={handleCloseDeletePatientDialog} color="secondary">Cancel</Button>
                     <Button onClick={handleConfirmDeletePatient} color="primary">Delete</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Appointment Dialog */}
+            <Dialog open={showEditAppointmentDialog} onClose={handleCloseEditAppointmentDialog}>
+                <DialogTitle>Edit Appointment</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        margin="dense"
+                        label="Patient Name"
+                        type="text"
+                        fullWidth
+                        value={editAppointmentData?.patientName || ''}
+                        disabled
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Moroccan ID"
+                        type="text"
+                        fullWidth
+                        value={editAppointmentData?.moroccanId || ''}
+                        disabled
+                    />
+                    <FormControl fullWidth margin="normal">
+                        <DatePicker
+                            selected={editAppointmentData?.appointmentDate ? new Date(editAppointmentData.appointmentDate.seconds * 1000) : null}
+                            onChange={(date) => setEditAppointmentData({ ...editAppointmentData, appointmentDate: date })}
+                            showTimeSelect
+                            dateFormat="Pp"
+                        />
+                    </FormControl>
+                    <TextField
+                        margin="dense"
+                        label="Notes"
+                        type="text"
+                        fullWidth
+                        multiline
+                        value={editAppointmentData?.notes || ''}
+                        onChange={(e) => setEditAppointmentData({ ...editAppointmentData, notes: e.target.value })}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Prescribed Medicine"
+                        type="text"
+                        fullWidth
+                        multiline
+                        value={editAppointmentData?.prescribedMedicine || ''}
+                        onChange={(e) => setEditAppointmentData({ ...editAppointmentData, prescribedMedicine: e.target.value })}
+                    />
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Status</InputLabel>
+                        <Select
+                            value={editAppointmentData?.done ? 'Done' : 'Pending'}
+                            onChange={(e) => setEditAppointmentData({ ...editAppointmentData, done: e.target.value === 'Done' })}
+                        >
+                            <MenuItem value="Pending">Pending</MenuItem>
+                            <MenuItem value="Done">Done</MenuItem>
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEditAppointmentDialog} color="secondary">Cancel</Button>
+                    <Button onClick={handleSaveEditAppointment} color="primary">Save</Button>
                 </DialogActions>
             </Dialog>
         </Box>
