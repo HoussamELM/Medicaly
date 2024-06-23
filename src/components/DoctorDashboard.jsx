@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tabs, Tab, Button, IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import {
+    TextField, Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tabs, Tab, Button,
+    IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, InputAdornment, FormControl, InputLabel,
+    Select, MenuItem
+} from '@mui/material';
 import { db } from '../firebase';
-import { collection, getDocs, query, where, runTransaction, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, runTransaction, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../auth/AuthProvider';
 import PatientDetails from './PatientDetails';
 import CalendarView from './CalendarView';
 import AddPatient from './AddPatient';
-import { CSVLink } from "react-csv";
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { CSVLink } from 'react-csv';
+import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon } from '@mui/icons-material';
 import './DoctorDashboard.css';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -15,6 +19,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 const DoctorDashboard = () => {
     const { currentUser } = useAuth();
     const [patients, setPatients] = useState([]);
+    const [allPatients, setAllPatients] = useState([]);
     const [appointments, setAppointments] = useState([]);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [tabValue, setTabValue] = useState(0);
@@ -25,6 +30,7 @@ const DoctorDashboard = () => {
     const [showEditPatientDialog, setShowEditPatientDialog] = useState(false);
     const [showDeletePatientDialog, setShowDeletePatientDialog] = useState(false);
     const [showEditAppointmentDialog, setShowEditAppointmentDialog] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const fetchPatients = async () => {
@@ -33,6 +39,7 @@ const DoctorDashboard = () => {
                 const patientSnapshot = await getDocs(patientQuery);
                 const patientsList = patientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setPatients(patientsList);
+                setAllPatients(patientsList); // Keep a copy of all patients for search functionality
                 setExportData(patientsList.map(patient => ({
                     PatientName: patient.patientName,
                     MoroccanID: patient.moroccanId
@@ -149,8 +156,8 @@ const DoctorDashboard = () => {
 
         try {
             const appointmentDocRef = doc(db, 'appointments', editAppointmentData.id);
+
             await updateDoc(appointmentDocRef, {
-                appointmentDate: Timestamp.fromDate(editAppointmentData.appointmentDate),
                 done: editAppointmentData.done,
                 notes: editAppointmentData.notes,
                 prescribedMedicine: editAppointmentData.prescribedMedicine
@@ -169,123 +176,149 @@ const DoctorDashboard = () => {
         }
     };
 
+    const handleSearchChange = (e) => {
+        const value = e.target.value.toLowerCase();
+        setSearchQuery(value);
+        const filteredPatients = allPatients.filter(
+            (patient) => patient.patientName.toLowerCase().includes(value) || patient.moroccanId.toLowerCase().includes(value)
+        );
+        setPatients(filteredPatients);
+    };
+
     return (
         <Box sx={{ mt: 8 }}>
-            {
-                selectedPatient ? (
-                    <PatientDetails moroccanId={selectedPatient} onBack={() => setSelectedPatient(null)} />
-                ) : (
-                    <>
-                        <Typography variant="h4" mb={2} textAlign="center">Doctor Dashboard</Typography>
-                        <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
-                            <Tab label="Patients" />
-                            <Tab label="Appointments" />
-                            <Tab label="Calendar" />
-                        </Tabs>
-                        {tabValue === 0 && (
-                            <>
-                                <Typography variant="subtitle1" mb={2} textAlign="center">
-                                    Click on a patient row to see their history
-                                </Typography>
-                                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                                    <CSVLink data={exportData} filename={"patients_data.csv"}>
-                                        <Button variant="contained" color="primary">Export Data as CSV</Button>
-                                    </CSVLink>
-                                    <Button variant="contained" color="secondary" onClick={() => setShowAddPatient(!showAddPatient)}>
-                                        {showAddPatient ? "Cancel" : "Add New Patient"}
-                                    </Button>
-                                </Box>
-                                {showAddPatient && <AddPatient onPatientAdded={() => setShowAddPatient(false)} />}
-                                <TableContainer component={Paper} sx={{ mt: 2 }}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>Patient Name</TableCell>
-                                                <TableCell>Moroccan ID</TableCell>
-                                                <TableCell>Past Appointments</TableCell>
-                                                <TableCell>Pending Appointments</TableCell>
-                                                <TableCell>Actions</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {patients.map((patient) => {
-                                                const patientAppointments = appointments.filter(app => app.moroccanId === patient.moroccanId);
-                                                const pastAppointments = patientAppointments.filter(app => app.done);
-                                                const pendingAppointments = patientAppointments.filter(app => !app.done);
+            {selectedPatient ? (
+                <PatientDetails moroccanId={selectedPatient} onBack={() => setSelectedPatient(null)} />
+            ) : (
+                <>
+                    <Typography variant="h4" mb={2} textAlign="center">Doctor Dashboard</Typography>
+                    <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
+                        <Tab label="Patients" />
+                        <Tab label="Appointments" />
+                        <Tab label="Calendar" />
+                    </Tabs>
 
-                                                return (
-                                                    <TableRow key={patient.id}>
-                                                        <TableCell>{patient.patientName}</TableCell>
-                                                        <TableCell>{patient.moroccanId}</TableCell>
-                                                        <TableCell>{pastAppointments.length}</TableCell>
-                                                        <TableCell>{pendingAppointments.length}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton onClick={(e) => {
+                    {tabValue === 0 && (
+                        <>
+                            <Typography variant="subtitle1" mb={2} textAlign="center">
+                                Click on a patient row to see their history
+                            </Typography>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                <CSVLink data={exportData} filename={"patients_data.csv"}>
+                                    <Button variant="contained" color="primary">Export Data as CSV</Button>
+                                </CSVLink>
+                                <Button variant="contained" color="secondary" onClick={() => setShowAddPatient(!showAddPatient)}>
+                                    {showAddPatient ? "Cancel" : "Add New Patient"}
+                                </Button>
+                                <TextField
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                    placeholder="Search Patients"
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                />
+                            </Box>
+                            {showAddPatient && <AddPatient onPatientAdded={() => setShowAddPatient(false)} />}
+                            <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Patient Name</TableCell>
+                                            <TableCell>Moroccan ID</TableCell>
+                                            <TableCell>Past Appointments</TableCell>
+                                            <TableCell>Pending Appointments</TableCell>
+                                            <TableCell>Actions</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {patients.map((patient) => {
+                                            const patientAppointments = appointments.filter(app => app.moroccanId === patient.moroccanId);
+                                            const pastAppointments = patientAppointments.filter(app => app.done);
+                                            const pendingAppointments = patientAppointments.filter(app => !app.done);
+
+                                            return (
+                                                <TableRow key={patient.id}>
+                                                    <TableCell>{patient.patientName}</TableCell>
+                                                    <TableCell>{patient.moroccanId}</TableCell>
+                                                    <TableCell>{pastAppointments.length}</TableCell>
+                                                    <TableCell>{pendingAppointments.length}</TableCell>
+                                                    <TableCell>
+                                                        <IconButton
+                                                            onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleEditPatient(patient);
-                                                            }}>
-                                                                <EditIcon />
-                                                            </IconButton>
-                                                            <IconButton onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeletePatient(patient);
-                                                            }}>
-                                                                <DeleteIcon />
-                                                            </IconButton>
-                                                            <Button onClick={() => setSelectedPatient(patient.moroccanId)}>View</Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            </>
-                        )}
-
-                        {tabValue === 1 && (
-                            <>
-                                <Typography variant="subtitle1" mb={2} textAlign="center">
-                                    All Appointments
-                                </Typography>
-                                <TableContainer component={Paper} sx={{ mt: 2 }}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>Patient Name</TableCell>
-                                                <TableCell>Moroccan ID</TableCell>
-                                                <TableCell>Appointment Date</TableCell>
-                                                <TableCell>Status</TableCell>
-                                                <TableCell>Actions</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {appointments.map((appointment) => (
-                                                <TableRow key={appointment.id}>
-                                                    <TableCell>{appointment.patientName}</TableCell>
-                                                    <TableCell>{appointment.moroccanId}</TableCell>
-                                                    <TableCell>{appointment.appointmentDate ? appointment.appointmentDate.toDate().toLocaleString() : 'No Appointments'}</TableCell>
-                                                    <TableCell>{appointment.done ? 'Done' : 'Pending'}</TableCell>
-                                                    <TableCell>
-                                                        <IconButton onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleEditAppointment(appointment);
-                                                        }}>
+                                                            }}
+                                                        >
                                                             <EditIcon />
                                                         </IconButton>
+                                                        <IconButton
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeletePatient(patient);
+                                                            }}
+                                                        >
+                                                            <DeleteIcon />
+                                                        </IconButton>
+                                                        <Button onClick={() => setSelectedPatient(patient.moroccanId)}>View</Button>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            </>
-                        )}
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </>
+                    )}
 
-                        {tabValue === 2 && <CalendarView />}
-                    </>
-                )
-            }
+                    {tabValue === 1 && (
+                        <>
+                            <Typography variant="subtitle1" mb={2} textAlign="center">
+                                All Appointments
+                            </Typography>
+                            <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Patient Name</TableCell>
+                                            <TableCell>Moroccan ID</TableCell>
+                                            <TableCell>Appointment Date</TableCell>
+                                            <TableCell>Status</TableCell>
+                                            <TableCell>Actions</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {appointments.map((appointment) => (
+                                            <TableRow key={appointment.id}>
+                                                <TableCell>{appointment.patientName}</TableCell>
+                                                <TableCell>{appointment.moroccanId}</TableCell>
+                                                <TableCell>{appointment.appointmentDate ? appointment.appointmentDate.toDate().toLocaleString() : 'No Appointments'}</TableCell>
+                                                <TableCell>{appointment.done ? 'Done' : 'Pending'}</TableCell>
+                                                <TableCell>
+                                                    <IconButton
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditAppointment(appointment);
+                                                        }}
+                                                    >
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </>
+                    )}
+
+                    {tabValue === 2 && <CalendarView />}
+                </>
+            )}
 
             {/* Edit Patient Dialog */}
             <Dialog open={showEditPatientDialog} onClose={handleCloseEditPatientDialog}>
