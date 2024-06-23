@@ -74,7 +74,7 @@ const AddPatient = ({ onPatientAdded }) => {
                 />
                 <Box mt={4}>
                     <Button type="submit" variant="contained" color="primary" fullWidth>
-                        Add Patient
+                        Add Patientt
                     </Button>
                 </Box>
             </form>
