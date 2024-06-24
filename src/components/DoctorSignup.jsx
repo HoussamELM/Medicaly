@@ -6,7 +6,32 @@ import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 
-const specialties = ['Cardiology', 'Dermatology', 'Neurology', 'Pediatrics', 'General'];
+const specialties = [
+    'Cardiologie',
+    'Dermatologie',
+    'Neurologie',
+    'Pédiatrie',
+    'Général',
+    'Allergologie',
+    'Anesthésiologie',
+    'Gastroentérologie',
+    'Endocrinologie',
+    'Hématologie',
+    'Immunologie',
+    'Néphrologie',
+    'Oncologie',
+    'Ophtalmologie',
+    'Orthopédie',
+    'Oto-rhino-laryngologie',
+    'Pathologie',
+    'Psychiatrie',
+    'Pneumologie',
+    'Radiologie',
+    'Rhumatologie',
+    'Urologie',
+    'Chirurgie'
+];
+
 
 const DoctorSignup = () => {
     const [formData, setFormData] = useState({
@@ -41,12 +66,12 @@ const DoctorSignup = () => {
 
     return (
         <Box sx={{ maxWidth: '500px', margin: 'auto', mt: 8, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
-            <Typography variant="h4" mb={2} textAlign="center">Doctor Signup</Typography>
+            <Typography variant="h4" mb={2} textAlign="center">Inscription Docteur</Typography>
             {error && <Typography color="error">{error}</Typography>}
             <form onSubmit={handleSubmit} noValidate>
                 <TextField
                     fullWidth
-                    label="Name"
+                    label="Nom"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
@@ -65,7 +90,7 @@ const DoctorSignup = () => {
                 />
                 <TextField
                     fullWidth
-                    label="Password"
+                    label="Mot de Passe"
                     type="password"
                     name="password"
                     value={formData.password}
@@ -74,7 +99,7 @@ const DoctorSignup = () => {
                     required
                 />
                 <FormControl fullWidth margin="normal">
-                    <InputLabel>Specialty</InputLabel>
+                    <InputLabel>Spécialité</InputLabel>
                     <Select
                         name="specialty"
                         value={formData.specialty}

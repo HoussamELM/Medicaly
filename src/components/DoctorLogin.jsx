@@ -43,7 +43,7 @@ const DoctorLogin = () => {
 
     return (
         <Box sx={{ maxWidth: '500px', margin: 'auto', mt: 8, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
-            <Typography variant="h4" mb={2} textAlign="center">Doctor Login</Typography>
+            <Typography variant="h4" mb={2} textAlign="center">Connection Docteur</Typography>
             {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                     {error}
@@ -62,7 +62,7 @@ const DoctorLogin = () => {
                 />
                 <TextField
                     fullWidth
-                    label="Password"
+                    label="Mot de Passe"
                     type="password"
                     name="password"
                     value={password}
@@ -73,7 +73,7 @@ const DoctorLogin = () => {
                 <span className='text-xs ml-1'>Vous n'êtes pas encore membre ?<Link to="/doctor-signup" className='text-[#549B8C]'> Inscrivez-vous</Link></span>
                 <Box mt={4}>
                     <Button type="submit" variant="contained" color="primary" fullWidth>
-                        Login
+                        Se Connecter
                     </Button>
                 </Box>
             </form>
