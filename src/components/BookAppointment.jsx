@@ -10,7 +10,8 @@ const BookAppointment = () => {
         patientName: '',
         moroccanId: '',
         appointmentDate: null,
-        doctorId: ''
+        doctorId: '',
+        consultationReason: '' // Add 'Motif de consultation' field to formData
     });
     const [doctors, setDoctors] = useState([]);
     const [bookedTimes, setBookedTimes] = useState([]);
@@ -83,80 +84,76 @@ const BookAppointment = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        try {
-            if (!formData.appointmentDate) {
-                setError('Please select an appointment date.');
-                return;
-            }
 
-            const appointmentDate = Timestamp.fromDate(formData.appointmentDate);
-
-            // Check for existing patient
-            const patientQuery = query(
-                collection(db, 'patients'),
-                where('moroccanId', '==', formData.moroccanId)
-            );
-            const patientSnapshot = await getDocs(patientQuery);
-
-            if (!patientSnapshot.empty) {
-                const patientData = patientSnapshot.docs[0].data();
-                if (patientData.patientName !== formData.patientName) {
-                    setError('The patient name does not match the Moroccan ID.');
-                    return;
-                }
-            } else {
-                // Add patient if not existing
-                const newPatient = {
-                    patientName: formData.patientName,
-                    moroccanId: formData.moroccanId,
-                    doctorId: formData.doctorId
-                };
-                await setDoc(doc(db, 'patients', formData.moroccanId), newPatient);
-            }
-
-            // Check for existing pending appointments
-            const pendingQuery = query(
-                collection(db, 'appointments'),
-                where('moroccanId', '==', formData.moroccanId),
-                where('done', '==', false)
-            );
-            const querySnapshotPending = await getDocs(pendingQuery);
-
-            if (!querySnapshotPending.empty) {
-                setError('You already have a pending appointment.');
-                return;
-            }
-
-            // Check for existing appointments at the same time
-            const timeSlotQuery = query(
-                collection(db, 'appointments'),
-                where('doctorId', '==', formData.doctorId),
-                where('appointmentDate', '==', appointmentDate)
-            );
-            const querySnapshotSameTime = await getDocs(timeSlotQuery);
-
-            if (!querySnapshotSameTime.empty) {
-                setError('This time slot is already booked. Please choose another time.');
-                return;
-            }
-
-            await addDoc(collection(db, 'appointments'), {
-                ...formData,
-                appointmentDate,
-                done: false,
-                notes: '',
-                prescribedMedicine: ''
-            });
-
-            alert('Appointment booked successfully!');
-            setFormData({ patientName: '', moroccanId: '', appointmentDate: '', doctorId: '' });
-        } catch (error) {
-            console.error('Error booking appointment:', error);
-            setError('Error booking appointment. Please try again later.');
+        if (!formData.appointmentDate) {
+            setError('Please select an appointment date.');
+            return;
         }
+
+        const appointmentDate = Timestamp.fromDate(formData.appointmentDate);
+
+        // Check for existing patient
+        const patientQuery = query(
+            collection(db, 'patients'),
+            where('moroccanId', '==', formData.moroccanId)
+        );
+        const patientSnapshot = await getDocs(patientQuery);
+
+        if (!patientSnapshot.empty) {
+            const patientData = patientSnapshot.docs[0].data();
+            if (patientData.patientName !== formData.patientName) {
+                setError('The patient name does not match the Moroccan ID.');
+                return;
+            }
+        } else {
+            // Add patient if not existing
+            const newPatient = {
+                patientName: formData.patientName,
+                moroccanId: formData.moroccanId,
+                doctorId: formData.doctorId
+            };
+            await setDoc(doc(db, 'patients', formData.moroccanId), newPatient);
+        }
+
+        // Check for existing pending appointments
+        const pendingQuery = query(
+            collection(db, 'appointments'),
+            where('moroccanId', '==', formData.moroccanId),
+            where('done', '==', false)
+        );
+        const querySnapshotPending = await getDocs(pendingQuery);
+
+        if (!querySnapshotPending.empty) {
+            setError('You already have a pending appointment.');
+            return;
+        }
+
+        // Check for existing appointments at the same time
+        const timeSlotQuery = query(
+            collection(db, 'appointments'),
+            where('doctorId', '==', formData.doctorId),
+            where('appointmentDate', '==', appointmentDate)
+        );
+        const querySnapshotSameTime = await getDocs(timeSlotQuery);
+
+        if (!querySnapshotSameTime.empty) {
+            setError('This time slot is already booked. Please choose another time.');
+            return;
+        }
+
+        await addDoc(collection(db, 'appointments'), {
+            ...formData,
+            appointmentDate,
+            consultationReason: formData.consultationReason, // Include consultation reason
+            done: false,
+            notes: '',
+            prescribedMedicine: ''
+        });
+
+        alert('Appointment booked successfully!');
+        setFormData({ patientName: '', moroccanId: '', appointmentDate: '', doctorId: '', consultationReason: '' });
     };
 
-    // Custom DatePicker Input
     const CustomInput = forwardRef(({ value, onClick }, ref) => (
         <TextField
             fullWidth
@@ -201,7 +198,7 @@ const BookAppointment = () => {
                         showTimeSelect
                         filterTime={filterTime}
                         minDate={new Date()}
-                        maxDate={new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)} // Limit to one week
+                        maxDate={new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)}
                         dateFormat="MMMM d, yyyy h:mm aa"
                         timeFormat="HH:mm"
                         timeIntervals={30}
@@ -210,6 +207,15 @@ const BookAppointment = () => {
                         customInput={<CustomInput />}
                     />
                 </FormControl>
+                <TextField
+                    fullWidth
+                    label="Motif de consultation"
+                    name="consultationReason"
+                    value={formData.consultationReason}
+                    onChange={handleChange}
+                    margin="normal"
+                    required
+                />
                 <FormControl fullWidth margin="normal" required>
                     <InputLabel>Doctor</InputLabel>
                     <Select name="doctorId" value={formData.doctorId} onChange={handleChange}>

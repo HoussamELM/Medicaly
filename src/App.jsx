@@ -16,10 +16,13 @@ import './styles.css'; // Import global styles
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#549B8C',
     },
     secondary: {
       main: '#9c27b0',
+    },
+    white: {
+      main: '#ffffff',
     },
   },
   typography: {
@@ -36,45 +39,45 @@ const App = () => {
       <CssBaseline />
       <AuthProvider>
         <Router>
-          <Header />
-          <Container maxWidth="md">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <RedirectIfAuthenticated>
-                    <LandingPage />
-                  </RedirectIfAuthenticated>
-                }
-              />
-              <Route
-                path="/book-appointment"
-                element={
-                  <RedirectIfAuthenticated>
-                    <BookAppointment />
-                  </RedirectIfAuthenticated>
-                }
-              />
-              <Route
-                path="/doctor-login"
-                element={
-                  <RedirectIfAuthenticated>
-                    <DoctorLogin />
-                  </RedirectIfAuthenticated>
-                }
-              />
-              <Route
-                path="/doctor-signup"
-                element={
-                  <RedirectIfAuthenticated>
-                    <DoctorSignup />
-                  </RedirectIfAuthenticated>
-                }
-              />
-              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
-            </Routes>
-          </Container>
+            <Header />
+            <Container maxWidth="md">
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <RedirectIfAuthenticated>
+                      <LandingPage />
+                    </RedirectIfAuthenticated>
+                  }
+                />
+                <Route
+                  path="/book-appointment"
+                  element={
+                    <RedirectIfAuthenticated>
+                      <BookAppointment />
+                    </RedirectIfAuthenticated>
+                  }
+                />
+                <Route
+                  path="/doctor-login"
+                  element={
+                    <RedirectIfAuthenticated>
+                      <DoctorLogin />
+                    </RedirectIfAuthenticated>
+                  }
+                />
+                <Route
+                  path="/doctor-signup"
+                  element={
+                    <RedirectIfAuthenticated>
+                      <DoctorSignup />
+                    </RedirectIfAuthenticated>
+                  }
+                />
+                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
+              </Routes>
+            </Container>
         </Router>
       </AuthProvider>
     </ThemeProvider>
