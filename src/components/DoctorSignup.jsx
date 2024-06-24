@@ -4,6 +4,7 @@ import { TextField, Button, Typography, Box, MenuItem, FormControl, InputLabel, 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
 
 const specialties = ['Cardiology', 'Dermatology', 'Neurology', 'Pediatrics', 'General'];
 
@@ -85,6 +86,7 @@ const DoctorSignup = () => {
                         ))}
                     </Select>
                 </FormControl>
+                <span className='text-xs ml-1'>Vous êtes déja membre?<Link to="/doctor-login" className='text-[#549B8C]'> Connectez-vous</Link></span>
                 <Box mt={4}>
                     <Button type="submit" variant="contained" color="primary" fullWidth>
                         Signup

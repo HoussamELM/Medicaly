@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 const Header = () => {
     const { currentUser } = useAuth();
@@ -16,6 +17,12 @@ const Header = () => {
         window.location.href = '/';
     };
 
+    // TODO: Make it so that when i click on "espace docteur" it changes the text and the link to "espace client" with state
+
+    const [navButton, setNavButton] = useState(false);
+    const handleNavButtonClick = () => {
+        setNavButton(!navButton);
+    };
 
     return (
         // TODO: change to a custom header, where the actual header is 90% of the width
@@ -45,9 +52,15 @@ const Header = () => {
                             <Button component={Link} to="/" variant="none" color="primary" sx={{ mr: 2 }}>
                                 Medicaly
                             </Button>
-                            <Button component={Link} to="/doctor-login" variant="outlined" color="white" size="large">
-                                Espace Docteur
-                            </Button>
+                            {navButton ? (
+                                <Button onClick={handleNavButtonClick} component={Link} to="/" variant="outlined" color="white" size="large">
+                                    Espace Client
+                                </Button>
+                            ) :
+                                <Button onClick={handleNavButtonClick} component={Link} to="/doctor-login" variant="outlined" color="white" size="large">
+                                    Espace Docteur
+                                </Button>
+                            }
                         </Box>
                     )}
                 </Toolbar>

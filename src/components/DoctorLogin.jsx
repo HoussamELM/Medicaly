@@ -3,6 +3,7 @@ import { TextField, Button, Typography, Box, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Link } from 'react-router-dom';
 
 const DoctorLogin = () => {
     const [email, setEmail] = useState('');
@@ -69,6 +70,7 @@ const DoctorLogin = () => {
                     margin="normal"
                     required
                 />
+                <span className='text-xs ml-1'>Vous n'êtes pas encore membre ?<Link to="/doctor-signup" className='text-[#549B8C]'> Inscrivez-vous</Link></span>
                 <Box mt={4}>
                     <Button type="submit" variant="contained" color="primary" fullWidth>
                         Login
