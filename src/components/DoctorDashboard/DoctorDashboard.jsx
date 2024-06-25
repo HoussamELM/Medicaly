@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    TextField, Typography, Box, Tabs, Tab, Button, InputAdornment, Alert,
+    TextField, Typography, Box, Tabs, Tab, Button, InputAdornment, Alert, ToggleButtonGroup, ToggleButton
 } from '@mui/material';
 import { CSVLink } from 'react-csv';
 import { Search as SearchIcon } from '@mui/icons-material';
@@ -71,7 +71,9 @@ const DoctorDashboard = () => {
     }, [currentUser]);
 
     const handleTabChange = (event, newValue) => {
-        setTabValue(newValue);
+        if (newValue !== null && newValue !== tabValue) {
+            setTabValue(newValue);
+        }
     };
 
     const handleEditPatient = (patient) => {
@@ -240,12 +242,32 @@ const DoctorDashboard = () => {
                 <PatientDetails moroccanId={selectedPatient} onBack={() => setSelectedPatient(null)} />
             ) : (
                 <>
-                    <Typography variant="h4" mb={2} textAlign="center">Tableau de bord du médecin</Typography>
                     <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
                         <Tab label="Patients" />
                         <Tab label="Rendez-vous" />
                         <Tab label="Calendrier" />
                     </Tabs>
+
+                    {/*<Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                        <ToggleButtonGroup
+                            value={tabValue}
+                            exclusive
+                            onChange={handleTabChange}
+                            aria-label="text alignment"
+                            color="primary"
+                        >
+                            <ToggleButton value={0} aria-label="left aligned">
+                                Patients
+                            </ToggleButton>
+                            <ToggleButton value={1} aria-label="centered">
+                                Rendez-vous
+                            </ToggleButton>
+                            <ToggleButton value={2} aria-label="right aligned">
+                                Calendrier
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+                    </Box>*/}
+
 
                     {tabValue === 0 && (
                         <>
@@ -259,7 +281,7 @@ const DoctorDashboard = () => {
                                 <TextField
                                     value={searchQuery}
                                     onChange={handleSearchChange}
-                                    placeholder="Rechercher des patients"
+                                    placeholder="Rechercher Patients"
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
@@ -290,9 +312,9 @@ const DoctorDashboard = () => {
                     )}
 
                     {tabValue === 2 && (
-                    <div className="mt-8">
-                    <CalendarView/>
-                    </div>
+                        <div className="mt-8">
+                            <CalendarView />
+                        </div>
                     )}
                 </>
             )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { CssBaseline, Container, ThemeProvider, createTheme } from '@mui/material';
+import { CssBaseline, Container, ThemeProvider, createTheme, Box } from '@mui/material';
 import LandingPage from './components/LandingPage';
 import BookAppointment from './components/BookAppointment';
 import DoctorLogin from './components/DoctorLogin';
@@ -24,6 +24,9 @@ const theme = createTheme({
     white: {
       main: '#ffffff',
     },
+    background: {
+      default: '#f5f5f5',
+    },
   },
   typography: {
     fontFamily: 'Roboto, sans-serif',
@@ -39,8 +42,10 @@ const App = () => {
       <CssBaseline />
       <AuthProvider>
         <Router>
-            <Header />
-            <Container maxWidth="md">
+          <Header />
+          {/* Apply the background color to the Box */}
+          <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+            <Container>
               <Routes>
                 <Route
                   path="/"
@@ -78,6 +83,7 @@ const App = () => {
                 <Route path="/dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
               </Routes>
             </Container>
+          </Box>
         </Router>
       </AuthProvider>
     </ThemeProvider>

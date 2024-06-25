@@ -1,4 +1,3 @@
-// src/components/Header.jsx
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
@@ -10,14 +9,17 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
 const Header = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, doctorName } = useAuth(); // Access doctorName from AuthContext
 
     const handleLogout = async () => {
         await signOut(auth);
         window.location.href = '/';
     };
 
-    // TODO: Make it so that when i click on "espace docteur" it changes the text and the link to "espace client" with state
+    function capitalizeFirstLetter(string) {
+        if (!string) return '';
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
 
     const [navButton, setNavButton] = useState(false);
     const handleNavButtonClick = () => {
@@ -25,7 +27,6 @@ const Header = () => {
     };
 
     return (
-        // TODO: change to a custom header, where the actual header is 90% of the width
         <div className=' text-white flex justify-center items-center flex-col'>
             <div className="flex justify-between items-center flex-row w-4/5 px-1.5 pt-4 pb-2">
                 <a className="text-gray-400 flex items-center" href='tel:0619834123'>
@@ -42,7 +43,7 @@ const Header = () => {
                     {currentUser && (
                         <Box width="100%" display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="body1" sx={{ display: 'inline', mr: 2 }}>
-                                Signed in as {currentUser.email}
+                               Bienvenue Dr. {capitalizeFirstLetter(doctorName)}
                             </Typography>
                             <Button color="inherit" variant="outlined" onClick={handleLogout}>Déconnexion</Button>
                         </Box>
