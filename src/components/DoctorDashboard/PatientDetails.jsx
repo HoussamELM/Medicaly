@@ -1,7 +1,6 @@
-// src/components/DoctorDashboard/PatientDetails.jsx
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Checkbox, Divider, Grid, Select, MenuItem, FormControl, InputLabe, Container } from '@mui/material';
-import { ArrowBack, Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Checkbox, Divider, Grid, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { ArrowBack, Edit as EditIcon } from '@mui/icons-material';
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../auth/AuthProvider';
@@ -12,8 +11,8 @@ const PatientDetails = ({ moroccanId, onBack }) => {
     const [patient, setPatient] = useState(null);
     const [appointments, setAppointments] = useState([]);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
-    const [openDialog, setOpenDialog] = useState(false);
-    const [editMode, setEditMode] = useState(false);
+    const [openAppointmentDialog, setOpenAppointmentDialog] = useState(false);
+    const [openEditPatientDialog, setOpenEditPatientDialog] = useState(false);
     const [editablePatient, setEditablePatient] = useState(null);
 
     useEffect(() => {
@@ -52,7 +51,7 @@ const PatientDetails = ({ moroccanId, onBack }) => {
 
     const handleEdit = (appointment) => {
         setSelectedAppointment(appointment);
-        setOpenDialog(true);
+        setOpenAppointmentDialog(true);
     };
 
     const handleSaveAppointment = async () => {
@@ -64,11 +63,16 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                     appointmentDate: dateToTimestamp(selectedAppointment.appointmentDate)
                 });
                 setAppointments(appointments.map(app => app.id === selectedAppointment.id ? selectedAppointment : app));
-                setOpenDialog(false);
+                setOpenAppointmentDialog(false);
             } catch (error) {
                 console.error('Error updating appointment:', error);
             }
         }
+    };
+
+    const handleOpenEditPatientDialog = () => {
+        setEditablePatient(patient);
+        setOpenEditPatientDialog(true);
     };
 
     const handleSavePatient = async () => {
@@ -93,16 +97,16 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                     familyHistory: editablePatient.familyHistory,
                 });
                 setPatient(editablePatient);
-                setEditMode(false);
+                setOpenEditPatientDialog(false);
             } catch (error) {
                 console.error('Error updating patient:', error);
             }
         }
     };
 
-    const handleCancelEdit = () => {
+    const handleCancelEditPatient = () => {
         setEditablePatient(patient);
-        setEditMode(false);
+        setOpenEditPatientDialog(false);
     };
 
     const handleChange = (e) => {
@@ -111,141 +115,91 @@ const PatientDetails = ({ moroccanId, onBack }) => {
     };
 
     return (
-        <Box sx={{ mt: 8 }}>
-            <IconButton onClick={onBack}>
-                <ArrowBack />
-            </IconButton>
-            <Typography variant="h4" mb={2} textAlign="center">Détails du patient</Typography>
+        <div className='w-full h-[80vh] w-full flex justify-center items-center flex-col bg-white rounded-lg'>
+            <div className='w-full flex justify-between items-center flex-row mb-12'>
+                <IconButton onClick={onBack}>
+                    <ArrowBack />
+                </IconButton>
+                <Typography variant="h4" textAlign="center" sx={{ flexGrow: 1 }}>Détails du patient</Typography>
+                <IconButton color="primary" onClick={handleOpenEditPatientDialog}>
+                    <EditIcon />
+                </IconButton>
+            </div>
             {patient && (
-                <Box>
+                <div className='w-full p-4'>
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                             <Box>
-                                <Typography variant="h6">Informations de base</Typography>
-                                {editMode ? (
-                                    <>
-                                        <TextField label="Nom Prénom" name="patientName" fullWidth margin="normal" value={editablePatient.patientName} onChange={handleChange} />
-                                        <TextField label="CIN" name="moroccanId" fullWidth margin="normal" value={editablePatient.moroccanId} disabled />
-                                        <TextField label="Date de naissance" name="dateOfBirth" type="date" fullWidth margin="normal" value={formatDateForInput(timestampToDate(editablePatient.dateOfBirth))} onChange={handleChange} InputLabelProps={{ shrink: true }} />
-                                        <TextField label="Âge" name="age" fullWidth margin="normal" value={editablePatient.dateOfBirth ? new Date().getFullYear() - new Date(editablePatient.dateOfBirth.seconds * 1000).getFullYear() : 'N/A'} disabled />
-                                        <FormControl fullWidth margin="normal">
-                                            <InputLabel>Sexe</InputLabel>
-                                            <Select name="gender" value={editablePatient.gender} onChange={handleChange}>
-                                                <MenuItem value="masculain">Masculain</MenuItem>
-                                                <MenuItem value="féminin">Féminin</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                        <TextField label="Groupe sanguin" name="bloodGroup" fullWidth margin="normal" value={editablePatient.bloodGroup} onChange={handleChange} />
-                                        <TextField label="Profession" name="profession" fullWidth margin="normal" value={editablePatient.profession} onChange={handleChange} />
-                                        <TextField label="Adresse" name="city" fullWidth margin="normal" value={editablePatient.city} onChange={handleChange} />
-                                        <TextField label="Couverture sociale" name="socialCoverage" fullWidth margin="normal" value={editablePatient.socialCoverage} onChange={handleChange} />
-                                    </>
-                                ) : (
-                                    <>
-                                        <Typography><strong>Nom Prénom:</strong> {patient.patientName}</Typography>
-                                        <Typography><strong>CIN:</strong> {patient.moroccanId}</Typography>
-                                        <Typography><strong>Date de naissance:</strong> {timestampToDate(patient.dateOfBirth)?.toLocaleDateString()}</Typography>
-                                        <Typography><strong>Âge:</strong> {patient.dateOfBirth ? new Date().getFullYear() - timestampToDate(patient.dateOfBirth).getFullYear() : 'N/A'}</Typography>
-                                        <Typography><strong>Sexe:</strong> {patient.gender}</Typography>
-                                        <Typography><strong>Groupe sanguin:</strong> {patient.bloodGroup}</Typography>
-                                        <Typography><strong>Profession:</strong> {patient.profession}</Typography>
-                                        <Typography><strong>Adresse:</strong> {patient.city}</Typography>
-                                        <Typography><strong>Couverture sociale:</strong> {patient.socialCoverage}</Typography>
-                                    </>
-                                )}
+                                <h1 className='font-bold text-2xl mb-6'>Informations de base</h1>
+                                <Typography><strong>Nom Prénom:</strong> {patient.patientName}</Typography>
+                                <Typography><strong>CIN:</strong> {patient.moroccanId}</Typography>
+                                <Typography><strong>Date de naissance:</strong> {timestampToDate(patient.dateOfBirth)?.toLocaleDateString()}</Typography>
+                                <Typography><strong>Âge:</strong> {patient.dateOfBirth ? new Date().getFullYear() - timestampToDate(patient.dateOfBirth).getFullYear() : 'N/A'}</Typography>
+                                <Typography><strong>Sexe:</strong> {patient.gender}</Typography>
+                                <Typography><strong>Groupe sanguin:</strong> {patient.bloodGroup}</Typography>
+                                <Typography><strong>Profession:</strong> {patient.profession}</Typography>
+                                <Typography><strong>Adresse:</strong> {patient.city}</Typography>
+                                <Typography><strong>Couverture sociale:</strong> {patient.socialCoverage}</Typography>
                             </Box>
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <Box>
-                                <Typography variant="h6">Contact</Typography>
-                                {editMode ? (
-                                    <>
-                                        <TextField label="Mobile" name="mobilePhone" fullWidth margin="normal" value={editablePatient.mobilePhone} onChange={handleChange} />
-                                        <TextField label="Fix" name="landlinePhone" fullWidth margin="normal" value={editablePatient.landlinePhone} onChange={handleChange} />
-                                    </>
-                                ) : (
-                                    <>
-                                        <Typography><strong>Mobile:</strong> {patient.mobilePhone}</Typography>
-                                        <Typography><strong>Fix:</strong> {patient.landlinePhone}</Typography>
-                                    </>
-                                )}
+                                <h1 className='font-bold text-2xl mb-3'>Contact</h1>
+                                <Typography><strong>Mobile:</strong> {patient.mobilePhone}</Typography>
+                                <Typography><strong>Fix:</strong> {patient.landlinePhone}</Typography>
                             </Box>
-                            <Box sx={{ mt: 4 }}>
-                                <Typography variant="h6">Antécédents du patient</Typography>
-                                {editMode ? (
-                                    <>
-                                        <TextField label="Personnels" name="personalHistory" fullWidth margin="normal" value={editablePatient.personalHistory} onChange={handleChange} />
-                                        <TextField label="Allergies" name="allergies" fullWidth margin="normal" value={editablePatient.allergies} onChange={handleChange} />
-                                        <TextField label="Chirurgicaux" name="surgicalHistory" fullWidth margin="normal" value={editablePatient.surgicalHistory} onChange={handleChange} />
-                                        <TextField label="Habitudes toxiques" name="toxicHabits" fullWidth margin="normal" value={editablePatient.toxicHabits} onChange={handleChange} />
-                                        <TextField label="Familiaux" name="familyHistory" fullWidth margin="normal" value={editablePatient.familyHistory} onChange={handleChange} />
-                                    </>
-                                ) : (
-                                    <>
-                                        <Typography><strong>Personnels:</strong> {patient.personalHistory}</Typography>
-                                        <Typography><strong>Allergies:</strong> {patient.allergies}</Typography>
-                                        <Typography><strong>Chirurgicaux:</strong> {patient.surgicalHistory}</Typography>
-                                        <Typography><strong>Habitudes toxiques:</strong> {patient.toxicHabits}</Typography>
-                                        <Typography><strong>Familiaux:</strong> {patient.familyHistory}</Typography>
-                                    </>
-                                )}
+                            <Box sx={{ mt: 2 }}>
+                                <h1 className='font-bold text-2xl mb-3'>Antécédents du patient</h1>
+                                <Typography><strong>Personnels:</strong> {patient.personalHistory}</Typography>
+                                <Typography><strong>Allergies:</strong> {patient.allergies}</Typography>
+                                <Typography><strong>Chirurgicaux:</strong> {patient.surgicalHistory}</Typography>
+                                <Typography><strong>Habitudes toxiques:</strong> {patient.toxicHabits}</Typography>
+                                <Typography><strong>Familiaux:</strong> {patient.familyHistory}</Typography>
                             </Box>
                         </Grid>
                     </Grid>
-                    <Box display="flex" justifyContent="flex-end" sx={{ mt: 2 }}>
-                        {editMode ? (
-                            <>
-                                <IconButton color="primary" onClick={handleSavePatient}>
-                                    <SaveIcon />
-                                </IconButton>
-                                <IconButton color="secondary" onClick={handleCancelEdit}>
-                                    <CancelIcon />
-                                </IconButton>
-                            </>
-                        ) : (
-                            <IconButton color="primary" onClick={() => setEditMode(true)}>
-                                <EditIcon />
-                            </IconButton>
-                        )}
-                    </Box>
-                    <Divider sx={{ my: 4 }} />
-                </Box>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="h5" mb={2} textAlign="center">Rendez-vous</Typography>
+                    {appointments.length > 0 ? (
+                        <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
+                            <Table stickyHeader>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Date du rendez-vous</TableCell>
+                                        <TableCell>Notes</TableCell>
+                                        <TableCell>Médicaments prescrits</TableCell>
+                                        <TableCell>Statut</TableCell>
+                                        <TableCell>Actions</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {appointments.map((appointment) => (
+                                        <TableRow key={appointment.id}>
+                                            <TableCell>
+                                                <Typography variant="body1">
+                                                    {timestampToDate(appointment.appointmentDate)?.toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>{appointment.notes}</TableCell>
+                                            <TableCell>{appointment.prescribedMedicine}</TableCell>
+                                            <TableCell>{appointment.done ? 'Oui' : 'Non'}</TableCell>
+                                            <TableCell>
+                                                <IconButton onClick={() => handleEdit(appointment)}>
+                                                    <EditIcon />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    ) : (
+                        <Typography variant="body1" textAlign="center">Ce patient n'a pas encore de rendez-vous.</Typography>
+                    )}
+                </div>
             )}
-            <Typography variant="h5" mb={2} textAlign="center">Rendez-vous</Typography>
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Date du rendez-vous</TableCell>
-                            <TableCell>Notes</TableCell>
-                            <TableCell>Médicaments prescrits</TableCell>
-                            <TableCell>Statut</TableCell>
-                            <TableCell>Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {appointments.map((appointment) => (
-                            <TableRow key={appointment.id}>
-                                <TableCell>
-                                    <Typography variant="body1">
-                                        {timestampToDate(appointment.appointmentDate)?.toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>{appointment.notes}</TableCell>
-                                <TableCell>{appointment.prescribedMedicine}</TableCell>
-                                <TableCell>{appointment.done ? 'Oui' : 'Non'}</TableCell>
-                                <TableCell>
-                                    <IconButton onClick={() => handleEdit(appointment)}>
-                                        <EditIcon />
-                                    </IconButton>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
 
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+            <Dialog open={openAppointmentDialog} onClose={() => setOpenAppointmentDialog(false)}>
                 <DialogTitle>Modifier le rendez-vous</DialogTitle>
                 <DialogContent>
                     <TextField
@@ -287,11 +241,67 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)} color="secondary">Annuler</Button>
+                    <Button onClick={() => setOpenAppointmentDialog(false)} color="secondary">Annuler</Button>
                     <Button onClick={handleSaveAppointment} color="primary">Enregistrer</Button>
                 </DialogActions>
             </Dialog>
-        </Box>
+
+            <Dialog open={openEditPatientDialog} onClose={handleCancelEditPatient} maxWidth="md" fullWidth>
+                <DialogTitle>Modifier les informations du patient</DialogTitle>
+                <DialogContent dividers>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <TextField label="Nom Prénom" name="patientName" fullWidth margin="normal" value={editablePatient?.patientName || ''} onChange={handleChange} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="CIN" name="moroccanId" fullWidth margin="normal" value={editablePatient?.moroccanId || ''} disabled />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="Date de naissance" name="dateOfBirth" type="date" fullWidth margin="normal" value={formatDateForInput(timestampToDate(editablePatient?.dateOfBirth)) || ''} onChange={handleChange} InputLabelProps={{ shrink: true }} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>Sexe</InputLabel>
+                                <Select name="gender" value={editablePatient?.gender || ''} onChange={handleChange}>
+                                    <MenuItem value="masculain">Masculain</MenuItem>
+                                    <MenuItem value="féminin">Féminin</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="Groupe sanguin" name="bloodGroup" fullWidth margin="normal" value={editablePatient?.bloodGroup || ''} onChange={handleChange} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="Profession" name="profession" fullWidth margin="normal" value={editablePatient?.profession || ''} onChange={handleChange} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="Adresse" name="city" fullWidth margin="normal" value={editablePatient?.city || ''} onChange={handleChange} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="Couverture sociale" name="socialCoverage" fullWidth margin="normal" value={editablePatient?.socialCoverage || ''} onChange={handleChange} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="Mobile" name="mobilePhone" fullWidth margin="normal" value={editablePatient?.mobilePhone || ''} onChange={handleChange} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField label="Fix" name="landlinePhone" fullWidth margin="normal" value={editablePatient?.landlinePhone || ''} onChange={handleChange} />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Typography variant="h6" sx={{ mt: 2 }}>Antécédents du patient:</Typography>
+                            <TextField label="Personnels" name="personalHistory" fullWidth margin="normal" value={editablePatient?.personalHistory || ''} onChange={handleChange} />
+                            <TextField label="Allergies" name="allergies" fullWidth margin="normal" value={editablePatient?.allergies || ''} onChange={handleChange} />
+                            <TextField label="Chirurgicaux" name="surgicalHistory" fullWidth margin="normal" value={editablePatient?.surgicalHistory || ''} onChange={handleChange} />
+                            <TextField label="Habitudes toxiques" name="toxicHabits" fullWidth margin="normal" value={editablePatient?.toxicHabits || ''} onChange={handleChange} />
+                            <TextField label="Familiaux" name="familyHistory" fullWidth margin="normal" value={editablePatient?.familyHistory || ''} onChange={handleChange} />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelEditPatient} color="secondary">Annuler</Button>
+                    <Button onClick={handleSavePatient} color="primary">Enregistrer</Button>
+                </DialogActions>
+            </Dialog>
+        </div>
     );
 };
 

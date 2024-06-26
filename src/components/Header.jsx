@@ -7,6 +7,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 
 const Header = () => {
     const { currentUser, doctorName } = useAuth(); // Access doctorName from AuthContext
@@ -16,18 +17,13 @@ const Header = () => {
         window.location.href = '/';
     };
 
-    function capitalizeFirstLetter(string) {
-        if (!string) return '';
-        return string.charAt(0).toUpperCase() + string.slice(1);
-    }
-
     const [navButton, setNavButton] = useState(false);
     const handleNavButtonClick = () => {
         setNavButton(!navButton);
     };
 
     return (
-        <div className=' text-white flex justify-center items-center flex-col'>
+        <div className=' text-white flex justify-center items-center flex-col h-[15vh]'>
             <div className="flex justify-between items-center flex-row w-full px-1.5 pt-4 pb-2">
                 <a className="text-gray-400 flex items-center" href='tel:0619834123'>
                     <EmailIcon style={{ marginRight: '8px' }} />
@@ -38,21 +34,21 @@ const Header = () => {
                     Contactez-Nous Sur Whatsapp
                 </a>
             </div>
-            <AppBar position="static" sx={{ mt: 0, height: 86, justifyContent: 'center' }} >
+            <AppBar position="static" sx={{ mt: 0, height: 86, justifyContent: 'center', borderRadius: '8px' }} >
                 <Toolbar>
                     {currentUser && (
                         <Box width="100%" display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography variant="body1" sx={{ display: 'inline', mr: 2 }}>
-                                Bienvenue Dr. {capitalizeFirstLetter(doctorName)}
-                            </Typography>
+                            <div className='flex justify-center items-center flex-col w-[50px] h-[50px] bg-slate-100 rounded-full'>
+                                <MonitorHeartIcon color="primary" />
+                            </div>
                             <Button color="inherit" variant="outlined" onClick={handleLogout}>Déconnexion</Button>
                         </Box>
                     )}
                     {!currentUser && (
                         <Box width="100%" display="flex" justifyContent="space-between" alignItems="center">
-                            <Button component={Link} to="/" variant="none" color="primary" sx={{ mr: 2 }}>
-                                Medicaly
-                            </Button>
+                            <div className='flex justify-center items-center flex-col w-[50px] h-[50px] bg-slate-100 rounded-full'>
+                                <MonitorHeartIcon color="primary" />
+                            </div>
                             {navButton ? (
                                 <Button onClick={handleNavButtonClick} component={Link} to="/" variant="outlined" color="white" size="large">
                                     Espace Client

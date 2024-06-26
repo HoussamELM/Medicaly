@@ -167,10 +167,7 @@ const BookAppointment = () => {
     ));
 
     return (
-        <Box sx={{ maxWidth: '500px', margin: 'auto', mt: 8, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
-            <Typography variant="h4" mb={2} textAlign="center">
-                Book Appointment
-            </Typography>
+        <div className='w-[500px] h-[80vh] flex justify-center items-center bg-white rounded-lg'>
             {error && <Typography color="error">{error}</Typography>}
             <form onSubmit={handleSubmit} noValidate>
                 <TextField
@@ -184,7 +181,7 @@ const BookAppointment = () => {
                 />
                 <TextField
                     fullWidth
-                    label="Moroccan ID"
+                    label="CIN"
                     name="moroccanId"
                     value={formData.moroccanId}
                     onChange={handleChange}
@@ -228,11 +225,11 @@ const BookAppointment = () => {
                 </FormControl>
                 <Box mt={4}>
                     <Button type="submit" variant="contained" color="primary" fullWidth>
-                        Book Appointment
+                        Valider Rendez-vous
                     </Button>
                 </Box>
             </form>
-        </Box>
+        </div>
     );
 };
 

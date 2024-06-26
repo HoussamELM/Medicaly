@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, MenuItem, Select, InputLabel, FormControl, Typography, Grid } from '@mui/material';
+import { TextField, Button, Box, MenuItem, Select, InputLabel, FormControl, Typography, Grid, Alert } from '@mui/material';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../auth/AuthProvider';
@@ -26,6 +26,7 @@ const AddPatient = ({ onPatientAdded }) => {
         regularTreatment: '',
         familyHistory: '',
     });
+    const [successMessage, setSuccessMessage] = useState(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -46,7 +47,16 @@ const AddPatient = ({ onPatientAdded }) => {
                 dateOfBirth: patientData.dateOfBirth ? Timestamp.fromDate(patientData.dateOfBirth) : null,
                 dateRecorded: Timestamp.fromDate(new Date())
             });
-            onPatientAdded();
+
+            // Show success message
+            setSuccessMessage('Patient ajouté avec succès !');
+            
+            // Refresh the page after a short delay
+            setTimeout(() => {
+                onPatientAdded();
+                window.location.reload(); // Reload the page
+            }, 2000); // 2 seconds
+
         } catch (error) {
             console.error('Erreur lors de l\'ajout du patient:', error);
         }
@@ -54,6 +64,7 @@ const AddPatient = ({ onPatientAdded }) => {
 
     return (
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+            {successMessage && <Alert severity="success">{successMessage}</Alert>}
             <Grid container spacing={2}>
                 <Grid item xs={12}>
                     <TextField

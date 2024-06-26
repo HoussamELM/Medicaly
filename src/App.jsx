@@ -27,6 +27,9 @@ const theme = createTheme({
     background: {
       default: '#f5f5f5',
     },
+    gray: {
+      main: "#C0C0C0",
+    }
   },
   typography: {
     fontFamily: 'Roboto, sans-serif',
@@ -45,7 +48,7 @@ const App = () => {
           {/* Apply the background color to the Box */}
           <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', minWidth: "80%" }}>
             <Header />
-            <div>
+            <div className="h-[80vh]">
               <Routes>
                 <Route
                   path="/"

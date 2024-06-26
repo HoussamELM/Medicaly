@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
 
 const specialties = [
     'Cardiologie',
@@ -65,9 +66,13 @@ const DoctorSignup = () => {
     };
 
     return (
-        <Box sx={{ maxWidth: '500px', margin: 'auto', mt: 8, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
-            <Typography variant="h4" mb={2} textAlign="center">Inscription Docteur</Typography>
+        <div className='h-[80vh] w-full flex justify-center items-center flex-col bg-white rounded-lg'>
             {error && <Typography color="error">{error}</Typography>}
+            <div className='flex justify-center items-center flex-col'>
+                <div className='bg-gray-100 rounded-full p-4 flex flex-col justify-center items-center'>
+                    <HowToRegIcon color="primary" />
+                </div>
+            </div>
             <form onSubmit={handleSubmit} noValidate>
                 <TextField
                     fullWidth
@@ -111,14 +116,14 @@ const DoctorSignup = () => {
                         ))}
                     </Select>
                 </FormControl>
-                <span className='text-xs ml-1'>Vous êtes déja membre?<Link to="/doctor-login" className='text-[#549B8C]'> Connectez-vous</Link></span>
                 <Box mt={4}>
                     <Button type="submit" variant="contained" color="primary" fullWidth>
-                        Signup
+                        Regsitration
                     </Button>
                 </Box>
+                <span className='text-xs ml-1 self-end mt-3'>Vous êtes déja membre?<Link to="/doctor-login" className='text-[#549B8C]'> Connectez-vous</Link></span>
             </form>
-        </Box>
+        </div>
     );
 };
 

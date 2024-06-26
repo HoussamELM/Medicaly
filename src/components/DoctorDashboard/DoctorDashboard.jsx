@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-    TextField, Box, Tabs, Tab, Button, InputAdornment, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, Container
+    TextField, Box, Tabs, Tab, Button, InputAdornment, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, Container, Typography
 } from '@mui/material';
 import { CSVLink } from 'react-csv';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { collection, getDocs, getDoc, query, where, runTransaction, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../auth/AuthProvider';
+import { auth } from '../../firebase';
+import { signOut } from 'firebase/auth';
 import PatientDetails from './PatientDetails';
 import CalendarView from './CalendarView';
 import AddPatient from './AddPatient';
@@ -16,9 +18,14 @@ import EditAppointmentDialog from './EditAppointmentDialog';
 import PatientList from './PatientList';
 import AppointmentsList from './AppointmentsList';
 import './DoctorDashboard.css';
+import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import ContactsIcon from '@mui/icons-material/Contacts';
 
 const DoctorDashboard = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, doctorName } = useAuth();
     const [patients, setPatients] = useState([]);
     const [allPatients, setAllPatients] = useState([]);
     const [appointments, setAppointments] = useState([]);
@@ -34,7 +41,7 @@ const DoctorDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [infoMessage, setInfoMessage] = useState(null);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [rowsPerPage, setRowsPerPage] = useState(8);
 
     useEffect(() => {
         const fetchPatients = async () => {
@@ -246,122 +253,168 @@ const DoctorDashboard = () => {
         setPage(0);
     };
 
+    function capitalizeFirstLetter(string) {
+        if (!string) return '';
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    const handleLogout = async () => {
+        await signOut(auth);
+        window.location.href = '/';
+    };
+
     return (
-        <Box sx={{ mt: 8, padding: "0" }}>
-            {infoMessage && <Alert onClose={() => setInfoMessage(null)} severity="info">{infoMessage}</Alert>}
-            {selectedPatient ? (
-                <PatientDetails moroccanId={selectedPatient} onBack={() => setSelectedPatient(null)} />
-            ) : (
-                <>
-                    <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered >
-                        <Tab label="Patients" />
-                        <Tab label="Rendez-vous" />
-                        <Tab label="Calendrier" />
-                    </Tabs>
-
-                    {tabValue === 0 && (
-                        <>
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} className="mt-8">
-                                <CSVLink data={exportData} filename={"patients_data.csv"}>
-                                    <Button variant="contained" color="primary">Exporter les données en CSV</Button>
-                                </CSVLink>
-                                <Button variant="contained" color="secondary" onClick={() => setShowAddPatient(true)}>
-                                    Ajouter un nouveau patient
-                                </Button>
-                                <TextField
-                                    value={searchQuery}
-                                    onChange={handleSearchChange}
-                                    placeholder="Rechercher Patients"
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <SearchIcon />
-                                            </InputAdornment>
-                                        ),
-                                    }}
-                                />
-                            </Box>
-                            <PatientList
-                                patients={patients.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
-                                appointments={appointments}
-                                handleEditPatient={handleEditPatient}
-                                handleDeletePatient={handleDeletePatient}
-                                setSelectedPatient={setSelectedPatient}
-                            />
-                            <TablePagination
-                                component="div"
-                                count={patients.length}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                rowsPerPage={rowsPerPage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                                labelRowsPerPage={"Nombre de patients par page"}
-                            />
-                        </>
-                    )}
-
-                    {tabValue === 1 && (
-                        <div className="mt-8">
-                            <AppointmentsList
-                                appointments={appointments}
-                                handleEditAppointment={handleEditAppointment}
-                            />
-                            <TablePagination
-                                component="div"
-                                count={patients.length}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                rowsPerPage={rowsPerPage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                                labelRowsPerPage={"Nombre de patients par page"}
-                            />
+        <div className='h-[80vh] w-full flex justify-center items-center flex-row bg-white rounded-lg'>
+            <div className='flex justify-between items-center flex-col w-[25%] h-[80vh] border-r-2 pt-[5%] pb-[5%]'>
+                <div className='w-[90%] flex justify-center items-center flex-col'>
+                    <div className='flex justify-center items-center flex-row gap-3'>
+                        <div className='flex justify-center items-center w-[60px] h-[60px] bg-slate-100 rounded-full'>
+                            <PersonIcon />
                         </div>
-                    )}
+                        <div>
+                            <p className='font-bold text-xl'>Bienvenue Dr. {capitalizeFirstLetter(doctorName)}</p>
+                            <p className='text-sm'>Gerer vos Patient et rendez-vous</p>
+                        </div>
+                    </div>
+                </div>
+                <div className='w-[70%] flex justify-start items-start flex-col gap-3'>
+                    <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered orientation='vertical' sx={{ width: "100%", alignItems: "start" }} style={{ width: 250, float: 'left' }}>
+                        <Tab icon={<ContactsIcon />} iconPosition="start" label="Gestion des Patients" />
+                        <Tab icon={<EventAvailableIcon />} iconPosition="start" label="Mes Rendez-vous &nbsp; &nbsp; &nbsp; &nbsp;" />
+                        <Tab icon={<CalendarMonthIcon />} iconPosition="start" label="Mon Calendrier &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;" />
+                    </Tabs>
+                    {/*
+                        <button onClick={() => { setTabValue(0); }}><ContactsIcon fontSize="large" /><span className='ml-3'>Gestion des Patients</span></button>
+                        <button onClick={() => { setTabValue(1); }}><EventAvailableIcon fontSize="large" /><span className='ml-3'>Mes Rendez-vous</span></button>
+                        <button onClick={() => { setTabValue(2); }}><CalendarMonthIcon fontSize="large" /><span className='ml-3'>Mon Calendrier</span></button>
+                    */}
+                </div>
+                <div className='flex justify-center items-center flex-col w-full gap-4'>
+                    <div className='flex justify-center items-center flex-col gap-3 w-[70%]'>
+                        <Button variant="contained" size="large" color="secondary" onClick={() => setShowAddPatient(true)} fullWidth={true} sx={{ borderRadius: '10px', textTransform: "none" }}>
+                            Ajouter Patient
+                        </Button>
+                    </div>
+                    <hr className='border-slate-200 w-[60%] my-2' />
+                    <div className='flex justify-center items-center flex-col gap-2 w-[100%]' >
+                        <CSVLink data={exportData} filename={"patients_data.csv"} className='w-[70%]'>
+                            <Button variant="contained" color="gray" fullWidth={true} size="large" sx={{ borderRadius: '10px', textTransform: "none" }}>
+                                Exporter via CSV
+                            </Button>
+                        </CSVLink>
+                        <Button sx={{ textTransform: "none" }} onClick={handleLogout} ><LogoutIcon /> &nbsp; Se Déconnecter</Button>
+                    </div>
+                </div>
+            </div>
+            <div className='flex justify-top items-center flex-col w-[75%] h-[80vh] p-[30px]'>
 
-                    {tabValue === 2 && (
-                        <Container>
-                            <div className="mt-8 h-[65vh] overflow-y-scroll">
-                                <CalendarView />
-                            </div>
-                        </Container>
-                    )}
-                </>
-            )}
+                {infoMessage && <Alert onClose={() => setInfoMessage(null)} severity="info">{infoMessage}</Alert>}
+                {selectedPatient ? (
+                    <PatientDetails moroccanId={selectedPatient} onBack={() => setSelectedPatient(null)} />
+                ) : (
+                    <>
+                        {tabValue === 0 && (
+                            <>
+                                <div className='flex justify-center items-center flex-col w-[100%] gap-3'>
+                                    <TextField
+                                        value={searchQuery}
+                                        onChange={handleSearchChange}
+                                        placeholder="Rechercher Patients"
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                        sx={{ width: '100%' }}
+                                    />
+                                </div>
+                                <PatientList
+                                    patients={patients.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+                                    appointments={appointments}
+                                    handleEditPatient={handleEditPatient}
+                                    handleDeletePatient={handleDeletePatient}
+                                    setSelectedPatient={setSelectedPatient}
+                                />
+                                <TablePagination
+                                    component="div"
+                                    count={patients.length}
+                                    page={page}
+                                    onPageChange={handleChangePage}
+                                    rowsPerPage={rowsPerPage}
+                                    onRowsPerPageChange={handleChangeRowsPerPage}
+                                    rowsPerPageOptions={[]}
+                                    style={{ display: "flex", width: "100%", justifyContent: "end", alignItems: "center" }}
+                                />
+                            </>
+                        )}
 
-            <Dialog open={showAddPatient} onClose={() => setShowAddPatient(false)} maxWidth="md" fullWidth>
-                <DialogTitle>Ajouter un nouveau patient</DialogTitle>
-                <DialogContent dividers>
-                    <AddPatient onPatientAdded={() => setShowAddPatient(false)} />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShowAddPatient(false)} color="primary">
-                        Annuler
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                        {tabValue === 1 && (
+                            <>
+                                <AppointmentsList
+                                    appointments={appointments}
+                                    handleEditAppointment={handleEditAppointment}
+                                />
+                                <TablePagination
+                                    component="div"
+                                    count={patients.length}
+                                    page={page}
+                                    onPageChange={handleChangePage}
+                                    rowsPerPage={rowsPerPage}
+                                    rowsPerPageOptions={[]}
+                                    style={{ display: "flex", width: "100%", justifyContent: "end", alignItems: "center" }}
+                                />
+                            </>
+                        )}
 
-            <EditPatientDialog
-                open={showEditPatientDialog}
-                handleClose={handleCloseEditPatientDialog}
-                handleSave={handleSaveEditPatient}
-                patientData={editPatientData}
-                setPatientData={setEditPatientData}
-            />
+                        {tabValue === 2 && (
+                            <>
+                                <Container>
+                                    <div className="mt-8 h-[65vh] overflow-y-scroll">
+                                        <CalendarView />
+                                    </div>
+                                </Container>
+                            </>
+                        )}
+                    </>
+                )}
 
-            <DeletePatientDialog
-                open={showDeletePatientDialog}
-                handleClose={handleCloseDeletePatientDialog}
-                handleConfirmDelete={handleConfirmDeletePatient}
-            />
+                <Dialog open={showAddPatient} onClose={() => setShowAddPatient(false)} maxWidth="md" fullWidth>
+                    <DialogTitle>Ajouter un nouveau patient</DialogTitle>
+                    <DialogContent dividers>
+                        <AddPatient onPatientAdded={() => setShowAddPatient(false)} />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setShowAddPatient(false)} color="primary">
+                            Annuler
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
-            <EditAppointmentDialog
-                open={showEditAppointmentDialog}
-                handleClose={handleCloseEditAppointmentDialog}
-                handleSave={handleSaveEditAppointment}
-                appointmentData={editAppointmentData}
-                setAppointmentData={setEditAppointmentData}
-            />
-        </Box>
+                <EditPatientDialog
+                    open={showEditPatientDialog}
+                    handleClose={handleCloseEditPatientDialog}
+                    handleSave={handleSaveEditPatient}
+                    patientData={editPatientData}
+                    setPatientData={setEditPatientData}
+                />
+
+                <DeletePatientDialog
+                    open={showDeletePatientDialog}
+                    handleClose={handleCloseDeletePatientDialog}
+                    handleConfirmDelete={handleConfirmDeletePatient}
+                />
+
+                <EditAppointmentDialog
+                    open={showEditAppointmentDialog}
+                    handleClose={handleCloseEditAppointmentDialog}
+                    handleSave={handleSaveEditAppointment}
+                    appointmentData={editAppointmentData}
+                    setAppointmentData={setEditAppointmentData}
+                />
+            </div>
+        </div>
     );
 };
 
