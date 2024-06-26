@@ -6,6 +6,9 @@ import { db } from '../../firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '../../auth/AuthProvider';
 import './CalendarView.css';
+import { Container } from 'postcss';
+import { Box } from '@mui/material';
+
 
 const CalendarView = () => {
   const { currentUser } = useAuth();

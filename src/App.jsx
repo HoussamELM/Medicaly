@@ -42,10 +42,10 @@ const App = () => {
       <CssBaseline />
       <AuthProvider>
         <Router>
-          <Header />
           {/* Apply the background color to the Box */}
-          <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
-            <Container>
+          <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', minWidth: "80%" }}>
+            <Header />
+            <div>
               <Routes>
                 <Route
                   path="/"
@@ -82,7 +82,7 @@ const App = () => {
                 <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
               </Routes>
-            </Container>
+            </div>
           </Box>
         </Router>
       </AuthProvider>

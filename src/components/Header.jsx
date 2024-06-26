@@ -28,7 +28,7 @@ const Header = () => {
 
     return (
         <div className=' text-white flex justify-center items-center flex-col'>
-            <div className="flex justify-between items-center flex-row w-4/5 px-1.5 pt-4 pb-2">
+            <div className="flex justify-between items-center flex-row w-full px-1.5 pt-4 pb-2">
                 <a className="text-gray-400 flex items-center" href='tel:0619834123'>
                     <EmailIcon style={{ marginRight: '8px' }} />
                     Contact@Medicaly.ma
@@ -38,12 +38,12 @@ const Header = () => {
                     Contactez-Nous Sur Whatsapp
                 </a>
             </div>
-            <AppBar position="static" sx={{ mt: 0, width: '80%', height: 86, justifyContent: 'center' }} >
+            <AppBar position="static" sx={{ mt: 0, height: 86, justifyContent: 'center' }} >
                 <Toolbar>
                     {currentUser && (
                         <Box width="100%" display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="body1" sx={{ display: 'inline', mr: 2 }}>
-                               Bienvenue Dr. {capitalizeFirstLetter(doctorName)}
+                                Bienvenue Dr. {capitalizeFirstLetter(doctorName)}
                             </Typography>
                             <Button color="inherit" variant="outlined" onClick={handleLogout}>Déconnexion</Button>
                         </Box>

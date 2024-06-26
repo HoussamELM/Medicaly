@@ -1,6 +1,6 @@
 // src/components/DoctorDashboard/PatientDetails.jsx
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Checkbox, Divider, Grid, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Checkbox, Divider, Grid, Select, MenuItem, FormControl, InputLabe, Container } from '@mui/material';
 import { ArrowBack, Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';

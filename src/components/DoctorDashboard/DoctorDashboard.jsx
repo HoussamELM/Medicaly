@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    TextField, Typography, Box, Tabs, Tab, Button, InputAdornment, Alert, ToggleButtonGroup, ToggleButton
+    TextField, Box, Tabs, Tab, Button, InputAdornment, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, Container
 } from '@mui/material';
 import { CSVLink } from 'react-csv';
 import { Search as SearchIcon } from '@mui/icons-material';
@@ -33,6 +33,8 @@ const DoctorDashboard = () => {
     const [showEditAppointmentDialog, setShowEditAppointmentDialog] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [infoMessage, setInfoMessage] = useState(null);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     useEffect(() => {
         const fetchPatients = async () => {
@@ -235,39 +237,27 @@ const DoctorDashboard = () => {
         setPatients(filteredPatients);
     };
 
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
     return (
-        <Box sx={{ mt: 8 }}>
+        <Box sx={{ mt: 8, padding: "0" }}>
             {infoMessage && <Alert onClose={() => setInfoMessage(null)} severity="info">{infoMessage}</Alert>}
             {selectedPatient ? (
                 <PatientDetails moroccanId={selectedPatient} onBack={() => setSelectedPatient(null)} />
             ) : (
                 <>
-                    <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
+                    <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered >
                         <Tab label="Patients" />
                         <Tab label="Rendez-vous" />
                         <Tab label="Calendrier" />
                     </Tabs>
-
-                    {/*<Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                        <ToggleButtonGroup
-                            value={tabValue}
-                            exclusive
-                            onChange={handleTabChange}
-                            aria-label="text alignment"
-                            color="primary"
-                        >
-                            <ToggleButton value={0} aria-label="left aligned">
-                                Patients
-                            </ToggleButton>
-                            <ToggleButton value={1} aria-label="centered">
-                                Rendez-vous
-                            </ToggleButton>
-                            <ToggleButton value={2} aria-label="right aligned">
-                                Calendrier
-                            </ToggleButton>
-                        </ToggleButtonGroup>
-                    </Box>*/}
-
 
                     {tabValue === 0 && (
                         <>
@@ -275,8 +265,8 @@ const DoctorDashboard = () => {
                                 <CSVLink data={exportData} filename={"patients_data.csv"}>
                                     <Button variant="contained" color="primary">Exporter les données en CSV</Button>
                                 </CSVLink>
-                                <Button variant="contained" color="secondary" onClick={() => setShowAddPatient(!showAddPatient)}>
-                                    {showAddPatient ? "Annuler" : "Ajouter un nouveau patient"}
+                                <Button variant="contained" color="secondary" onClick={() => setShowAddPatient(true)}>
+                                    Ajouter un nouveau patient
                                 </Button>
                                 <TextField
                                     value={searchQuery}
@@ -291,13 +281,21 @@ const DoctorDashboard = () => {
                                     }}
                                 />
                             </Box>
-                            {showAddPatient && <AddPatient onPatientAdded={() => setShowAddPatient(false)} />}
                             <PatientList
-                                patients={patients}
+                                patients={patients.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
                                 appointments={appointments}
                                 handleEditPatient={handleEditPatient}
                                 handleDeletePatient={handleDeletePatient}
                                 setSelectedPatient={setSelectedPatient}
+                            />
+                            <TablePagination
+                                component="div"
+                                count={patients.length}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                rowsPerPage={rowsPerPage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                labelRowsPerPage={"Nombre de patients par page"}
                             />
                         </>
                     )}
@@ -308,16 +306,39 @@ const DoctorDashboard = () => {
                                 appointments={appointments}
                                 handleEditAppointment={handleEditAppointment}
                             />
+                            <TablePagination
+                                component="div"
+                                count={patients.length}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                rowsPerPage={rowsPerPage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                labelRowsPerPage={"Nombre de patients par page"}
+                            />
                         </div>
                     )}
 
                     {tabValue === 2 && (
-                        <div className="mt-8">
-                            <CalendarView />
-                        </div>
+                        <Container>
+                            <div className="mt-8 h-[65vh] overflow-y-scroll">
+                                <CalendarView />
+                            </div>
+                        </Container>
                     )}
                 </>
             )}
+
+            <Dialog open={showAddPatient} onClose={() => setShowAddPatient(false)} maxWidth="md" fullWidth>
+                <DialogTitle>Ajouter un nouveau patient</DialogTitle>
+                <DialogContent dividers>
+                    <AddPatient onPatientAdded={() => setShowAddPatient(false)} />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowAddPatient(false)} color="primary">
+                        Annuler
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <EditPatientDialog
                 open={showEditPatientDialog}
