@@ -41,7 +41,7 @@ const DoctorDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [infoMessage, setInfoMessage] = useState(null);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(8);
+    const [rowsPerPage, setRowsPerPage] = useState(7);
 
     useEffect(() => {
         const fetchPatients = async () => {
@@ -101,16 +101,11 @@ const DoctorDashboard = () => {
         try {
             const patientDocRef = doc(db, 'patients', updatedPatientData.id);
 
-            // Check if document exists before updating
             const docSnapshot = await getDoc(patientDocRef);
             if (!docSnapshot.exists()) {
                 throw new Error(`No document to update: ${patientDocRef.path}`);
             }
 
-            // Log the document reference for debugging
-            console.log("Updating document: ", patientDocRef.path);
-
-            // Ensure dateOfBirth is a valid Date object
             const dateOfBirth = updatedPatientData.dateOfBirth instanceof Date
                 ? updatedPatientData.dateOfBirth
                 : updatedPatientData.dateOfBirth
@@ -139,7 +134,6 @@ const DoctorDashboard = () => {
             setEditPatientData(null);
             setInfoMessage('Patient mis à jour avec succès !');
 
-            // Refresh patients
             const patientQuery = query(collection(db, 'patients'), where('doctorId', '==', currentUser.uid));
             const patientSnapshot = await getDocs(patientQuery);
             setPatients(patientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -166,18 +160,13 @@ const DoctorDashboard = () => {
             await runTransaction(db, async (transaction) => {
                 const patientDocRef = doc(db, 'patients', editPatientData.id);
 
-                // Check if the document exists before deleting
                 const docSnapshot = await getDoc(patientDocRef);
                 if (!docSnapshot.exists()) {
                     throw new Error(`No document to delete: ${patientDocRef.path}`);
                 }
 
-                // Log for debugging purposes
-                console.log("Deleting document: ", patientDocRef.path);
-
                 transaction.delete(patientDocRef);
 
-                // Also delete related appointments
                 const appointmentQuery = query(collection(db, 'appointments'), where('moroccanId', '==', editPatientData.moroccanId));
                 const appointmentsSnapshot = await getDocs(appointmentQuery);
                 appointmentsSnapshot.forEach((doc) => {
@@ -189,7 +178,6 @@ const DoctorDashboard = () => {
             setEditPatientData(null);
             setInfoMessage('Patient et tous ses rendez-vous supprimés avec succès !');
 
-            // Refresh patients
             const patientQuery = query(collection(db, 'patients'), where('doctorId', '==', currentUser.uid));
             const patientSnapshot = await getDocs(patientQuery);
             setPatients(patientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -219,13 +207,13 @@ const DoctorDashboard = () => {
                 done: updatedAppointmentData.done,
                 notes: updatedAppointmentData.notes,
                 prescribedMedicine: updatedAppointmentData.prescribedMedicine,
+                appointmentDate: updatedAppointmentData.appointmentDate ? Timestamp.fromDate(updatedAppointmentData.appointmentDate) : null,
             });
 
             setShowEditAppointmentDialog(false);
             setEditAppointmentData(null);
             setInfoMessage('Rendez-vous mis à jour avec succès !');
 
-            // Refresh appointments
             const appointmentQuery = query(collection(db, 'appointments'), where('doctorId', '==', currentUser.uid));
             const appointmentSnapshot = await getDocs(appointmentQuery);
             setAppointments(appointmentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -276,18 +264,54 @@ const DoctorDashboard = () => {
                             <p className='text-sm'>Gerer vos Patient et rendez-vous</p>
                         </div>
                     </div>
+                    <hr className='border-slate-200 w-[60%] my-8' />
                 </div>
-                <div className='w-[70%] flex justify-start items-start flex-col gap-3'>
-                    <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered orientation='vertical' sx={{ width: "100%", alignItems: "start" }} style={{ width: 250, float: 'left' }}>
+                <div className='w-[70%] h-full flex justify-start items-start flex-col gap-3 pt-2'>
+                    {/*<Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered orientation='vertical' sx={{ width: "100%", alignItems: "start" }} style={{ width: 250, float: 'left' }}>
                         <Tab icon={<ContactsIcon />} iconPosition="start" label="Gestion des Patients" />
                         <Tab icon={<EventAvailableIcon />} iconPosition="start" label="Mes Rendez-vous &nbsp; &nbsp; &nbsp; &nbsp;" />
                         <Tab icon={<CalendarMonthIcon />} iconPosition="start" label="Mon Calendrier &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;" />
-                    </Tabs>
-                    {/*
-                        <button onClick={() => { setTabValue(0); }}><ContactsIcon fontSize="large" /><span className='ml-3'>Gestion des Patients</span></button>
-                        <button onClick={() => { setTabValue(1); }}><EventAvailableIcon fontSize="large" /><span className='ml-3'>Mes Rendez-vous</span></button>
-                        <button onClick={() => { setTabValue(2); }}><CalendarMonthIcon fontSize="large" /><span className='ml-3'>Mon Calendrier</span></button>
-                    */}
+                    </Tabs>*/}
+                    <ul className='flex justify-center items-center flex-col gap-2 w-[100%]'>
+                        <li className={`w-full ${tabValue === 0 ? 'selected-tab bg-gray-100 rounded-lg' : ''}`}>
+                            <Button
+                                className={`w-full ${tabValue === 0 ? 'selected-tab' : ''}`}
+                                sx={{ borderRadius: '10px', textTransform: "none" }}
+                                onClick={() => { setTabValue(0); }}
+                                color='tabs'
+                            >
+                                <ContactsIcon color='primary' />
+                                <p className='w-full text-left ml-3'>
+                                    Gestion des Patients
+                                </p>
+                            </Button>
+                        </li>
+                        <li className={`w-full ${tabValue === 1 ? 'selected-tab bg-gray-100 rounded-lg' : ''}`}>
+                            <Button
+                                className={`w-full ${tabValue === 1 ? 'selected-tab' : ''}`}
+                                sx={{ borderRadius: '10px', textTransform: "none" }}
+                                onClick={() => { setTabValue(1); }}
+                                color='tabs'
+                            >
+                                <EventAvailableIcon color='primary' />
+                                <p className='w-full text-left ml-3'>
+                                    Mes Rendez-vous
+                                </p>
+                            </Button>
+                        </li>
+                        <li className={`w-full ${tabValue === 2 ? 'selected-tab bg-gray-100 rounded-lg' : ''}`}>
+                            <Button
+                                className={`w-full ${tabValue === 2 ? 'selected-tab' : ''}`}
+                                sx={{ borderRadius: '10px', textTransform: "none" }}
+                                onClick={() => { setTabValue(2); }}
+                                color='tabs'>
+                                <CalendarMonthIcon color='primary' />
+                                <p className='w-full text-left ml-3'>
+                                    Mon Calendrier
+                                </p>
+                            </Button>
+                        </li>
+                    </ul>
                 </div>
                 <div className='flex justify-center items-center flex-col w-full gap-4'>
                     <div className='flex justify-center items-center flex-col gap-3 w-[70%]'>

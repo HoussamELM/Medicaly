@@ -115,7 +115,7 @@ const PatientDetails = ({ moroccanId, onBack }) => {
     };
 
     return (
-        <div className='w-full h-[80vh] w-full flex justify-center items-center flex-col bg-white rounded-lg'>
+        <div className='w-full h-[80vh] w-full flex justify-start items-center flex-col bg-white rounded-lg mt-12'>
             <div className='w-full flex justify-between items-center flex-row mb-12'>
                 <IconButton onClick={onBack}>
                     <ArrowBack />
@@ -158,8 +158,8 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                             </Box>
                         </Grid>
                     </Grid>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h5" mb={2} textAlign="center">Rendez-vous</Typography>
+                    <Divider sx={{ my: 6 }} />
+                    <Typography variant="h5" mb={2} textAlign="center">Rendez-vous  </Typography>
                     {appointments.length > 0 ? (
                         <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
                             <Table stickyHeader>
@@ -182,7 +182,7 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                                             </TableCell>
                                             <TableCell>{appointment.notes}</TableCell>
                                             <TableCell>{appointment.prescribedMedicine}</TableCell>
-                                            <TableCell>{appointment.done ? 'Oui' : 'Non'}</TableCell>
+                                            <TableCell>{appointment.done ? 'Terminé' : 'En attente'}</TableCell>
                                             <TableCell>
                                                 <IconButton onClick={() => handleEdit(appointment)}>
                                                     <EditIcon />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TextField, Button, Box, MenuItem, Select, InputLabel, FormControl, Typography, Grid, Alert } from '@mui/material';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../auth/AuthProvider';
 import DatePicker from 'react-datepicker';
@@ -41,7 +41,7 @@ const AddPatient = ({ onPatientAdded }) => {
         e.preventDefault();
 
         try {
-            await addDoc(collection(db, 'patients'), {
+            await setDoc(doc(db, 'patients', patientData.moroccanId), {
                 ...patientData,
                 doctorId: currentUser.uid,
                 dateOfBirth: patientData.dateOfBirth ? Timestamp.fromDate(patientData.dateOfBirth) : null,
@@ -50,7 +50,7 @@ const AddPatient = ({ onPatientAdded }) => {
 
             // Show success message
             setSuccessMessage('Patient ajouté avec succès !');
-            
+
             // Refresh the page after a short delay
             setTimeout(() => {
                 onPatientAdded();
@@ -99,7 +99,7 @@ const AddPatient = ({ onPatientAdded }) => {
                     />
                 </Grid>
                 <Grid item xs={12} width="100%">
-                    <FormControl fullWidth margin="normal" width="100%">
+                    <FormControl fullWidth margin="normal">
                         <DatePicker
                             selected={patientData.dateOfBirth}
                             onChange={handleDateChange}
@@ -116,21 +116,21 @@ const AddPatient = ({ onPatientAdded }) => {
                 </Grid>
                 <Grid item xs={12}>
                     <FormControl fullWidth margin="normal">
-                        <InputLabel>sexe</InputLabel>
+                        <InputLabel>Sexe</InputLabel>
                         <Select
                             name="gender"
                             value={patientData.gender}
                             onChange={handleInputChange}
                             fullWidth
                         >
-                            <MenuItem value="masculain">masculain</MenuItem>
-                            <MenuItem value="féminin">féminin</MenuItem>
+                            <MenuItem value="masculain">Masculain</MenuItem>
+                            <MenuItem value="féminin">Féminin</MenuItem>
                         </Select>
                     </FormControl>
                 </Grid>
                 <Grid item xs={12}>
                     <TextField
-                        label="téléphone portable"
+                        label="Téléphone portable"
                         name="mobilePhone"
                         value={patientData.mobilePhone}
                         onChange={handleInputChange}
@@ -140,7 +140,7 @@ const AddPatient = ({ onPatientAdded }) => {
                 </Grid>
                 <Grid item xs={12}>
                     <TextField
-                        label="téléphone fix (optionnel)"
+                        label="Téléphone fixe (optionnel)"
                         name="landlinePhone"
                         value={patientData.landlinePhone}
                         onChange={handleInputChange}
@@ -183,7 +183,7 @@ const AddPatient = ({ onPatientAdded }) => {
                 </Grid>
                 <Grid item xs={12}>
                     <TextField
-                        label="personnels"
+                        label="Personnels"
                         name="personalHistory"
                         value={patientData.personalHistory}
                         onChange={handleInputChange}
@@ -193,7 +193,7 @@ const AddPatient = ({ onPatientAdded }) => {
                 </Grid>
                 <Grid item xs={12}>
                     <TextField
-                        label="allergies"
+                        label="Allergies"
                         name="allergies"
                         value={patientData.allergies}
                         onChange={handleInputChange}
@@ -203,7 +203,7 @@ const AddPatient = ({ onPatientAdded }) => {
                 </Grid>
                 <Grid item xs={12}>
                     <TextField
-                        label="A.chirurgicaux"
+                        label="Antécédents chirurgicaux"
                         name="surgicalHistory"
                         value={patientData.surgicalHistory}
                         onChange={handleInputChange}
@@ -233,7 +233,7 @@ const AddPatient = ({ onPatientAdded }) => {
                 </Grid>
                 <Grid item xs={12}>
                     <TextField
-                        label="A.familiaux"
+                        label="Antécédents familiaux"
                         name="familyHistory"
                         value={patientData.familyHistory}
                         onChange={handleInputChange}

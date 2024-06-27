@@ -29,7 +29,11 @@ const theme = createTheme({
     },
     gray: {
       main: "#C0C0C0",
-    }
+    },
+    tabs: {
+      main: "#000000",
+      contrastText: "##000000",
+    },
   },
   typography: {
     fontFamily: 'Roboto, sans-serif',
