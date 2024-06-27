@@ -330,7 +330,7 @@ const DoctorDashboard = () => {
                     </div>
                 </div>
             </div>
-            <div className='flex justify-top items-center flex-col w-[75%] h-[80vh] p-[30px]'>
+            <div className='flex justify-center items-center gap-6 flex-col w-[75%] h-[80vh] p-[30px]'>
 
                 {infoMessage && <Alert onClose={() => setInfoMessage(null)} severity="info">{infoMessage}</Alert>}
                 {selectedPatient ? (

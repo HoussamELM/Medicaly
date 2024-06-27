@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Checkbox, Divider, Grid, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { ArrowBack, Edit as EditIcon } from '@mui/icons-material';
+import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Checkbox, Divider, Grid, Select, MenuItem, FormControl, InputLabel, TablePagination } from '@mui/material';
+import { ArrowBack, Edit as EditIcon, Add as AddIcon } from '@mui/icons-material';
 import { db } from '../../firebase';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../auth/AuthProvider';
 import { timestampToDate, dateToTimestamp, formatDateForInput, formatDateTimeForInput } from '../../utils/DateUtils';
 
@@ -11,9 +11,20 @@ const PatientDetails = ({ moroccanId, onBack }) => {
     const [patient, setPatient] = useState(null);
     const [appointments, setAppointments] = useState([]);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [newAppointment, setNewAppointment] = useState({
+        appointmentDate: '',
+        notes: '',
+        prescribedMedicine: '',
+        done: false
+    });
     const [openAppointmentDialog, setOpenAppointmentDialog] = useState(false);
     const [openEditPatientDialog, setOpenEditPatientDialog] = useState(false);
+    const [openAddAppointmentDialog, setOpenAddAppointmentDialog] = useState(false);
     const [editablePatient, setEditablePatient] = useState(null);
+
+    // Pagination state
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(2);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -70,6 +81,28 @@ const PatientDetails = ({ moroccanId, onBack }) => {
         }
     };
 
+    const handleAddAppointment = async () => {
+        try {
+            await addDoc(collection(db, 'appointments'), {
+                ...newAppointment,
+                moroccanId: patient.moroccanId,
+                doctorId: currentUser.uid,
+                appointmentDate: dateToTimestamp(new Appointment.appointmentDate),
+                createdDate: Timestamp.fromDate(new Date())
+            });
+            setNewAppointment({
+                appointmentDate: '',
+                notes: '',
+                prescribedMedicine: '',
+                done: false
+            });
+            setOpenAddAppointmentDialog(false);
+            fetchAppointments();
+        } catch (error) {
+            console.error('Error adding appointment:', error);
+        }
+    };
+
     const handleOpenEditPatientDialog = () => {
         setEditablePatient(patient);
         setOpenEditPatientDialog(true);
@@ -114,9 +147,18 @@ const PatientDetails = ({ moroccanId, onBack }) => {
         setEditablePatient({ ...editablePatient, [name]: value });
     };
 
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
     return (
         <div className='w-full h-[80vh] w-full flex justify-start items-center flex-col bg-white rounded-lg mt-12'>
-            <div className='w-full flex justify-between items-center flex-row mb-12'>
+            <div className='w-full flex justify-between items-center flex-row mb-10'>
                 <IconButton onClick={onBack}>
                     <ArrowBack />
                 </IconButton>
@@ -126,7 +168,7 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                 </IconButton>
             </div>
             {patient && (
-                <div className='w-full p-4'>
+                <div className='w-full p-x-4'>
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                             <Box>
@@ -159,7 +201,10 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                         </Grid>
                     </Grid>
                     <Divider sx={{ my: 6 }} />
-                    <Typography variant="h5" mb={2} textAlign="center">Rendez-vous  </Typography>
+                    <Typography variant="h5" mb={2} textAlign="center">Rendez-vous</Typography>
+                    <IconButton color="primary" onClick={() => setOpenAddAppointmentDialog(true)}>
+                        <AddIcon /> Ajouter un rendez-vous
+                    </IconButton>
                     {appointments.length > 0 ? (
                         <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
                             <Table stickyHeader>
@@ -173,7 +218,7 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {appointments.map((appointment) => (
+                                    {appointments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((appointment) => (
                                         <TableRow key={appointment.id}>
                                             <TableCell>
                                                 <Typography variant="body1">
@@ -192,6 +237,16 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                                     ))}
                                 </TableBody>
                             </Table>
+                            <TablePagination
+                                component="div"
+                                count={appointments.length}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                rowsPerPage={rowsPerPage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                rowsPerPageOptions={[2]}
+                                style={{ display: "flex", width: "100%", justifyContent: "end", alignItems: "center" }}
+                            />
                         </TableContainer>
                     ) : (
                         <Typography variant="body1" textAlign="center">Ce patient n'a pas encore de rendez-vous.</Typography>
@@ -243,6 +298,50 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                 <DialogActions>
                     <Button onClick={() => setOpenAppointmentDialog(false)} color="secondary">Annuler</Button>
                     <Button onClick={handleSaveAppointment} color="primary">Enregistrer</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={openAddAppointmentDialog} onClose={() => setOpenAddAppointmentDialog(false)} maxWidth="md" fullWidth>
+                <DialogTitle>Ajouter un rendez-vous</DialogTitle>
+                <DialogContent dividers>
+                    <TextField
+                        label="Date du rendez-vous"
+                        type="datetime-local"
+                        fullWidth
+                        margin="normal"
+                        value={newAppointment.appointmentDate}
+                        onChange={e => setNewAppointment({ ...newAppointment, appointmentDate: new Date(e.target.value) })}
+                        InputLabelProps={{
+                            shrink: true,
+                        }}
+                    />
+                    <TextField
+                        label="Notes"
+                        fullWidth
+                        multiline
+                        margin="normal"
+                        value={newAppointment.notes}
+                        onChange={e => setNewAppointment({ ...newAppointment, notes: e.target.value })}
+                    />
+                    <TextField
+                        label="Médicaments prescrits"
+                        fullWidth
+                        margin="normal"
+                        value={newAppointment.prescribedMedicine}
+                        onChange={e => setNewAppointment({ ...newAppointment, prescribedMedicine: e.target.value })}
+                    />
+                    <Box display="flex" alignItems="center">
+                        <Checkbox
+                            checked={newAppointment.done}
+                            onChange={e => setNewAppointment({ ...newAppointment, done: e.target.checked })}
+                            color="primary"
+                        />
+                        <Typography>Terminé</Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenAddAppointmentDialog(false)} color="secondary">Annuler</Button>
+                    <Button onClick={handleAddAppointment} color="primary">Enregistrer</Button>
                 </DialogActions>
             </Dialog>
 
