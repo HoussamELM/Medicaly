@@ -4,6 +4,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { db } from '../firebase';
 import { collection, addDoc, query, where, getDocs, Timestamp, doc, setDoc } from 'firebase/firestore';
+import './DoctorDashboard/DatePicker.css';
 
 const BookAppointment = () => {
     const [formData, setFormData] = useState({
@@ -118,13 +119,14 @@ const BookAppointment = () => {
         // Check for existing pending appointments
         const pendingQuery = query(
             collection(db, 'appointments'),
+            where('doctorId', '==', formData.doctorId),
             where('moroccanId', '==', formData.moroccanId),
             where('done', '==', false)
         );
         const querySnapshotPending = await getDocs(pendingQuery);
 
         if (!querySnapshotPending.empty) {
-            setError('You already have a pending appointment.');
+            setError('Vous avez déjà un rendez-vous en attente.');
             return;
         }
 
@@ -137,7 +139,7 @@ const BookAppointment = () => {
         const querySnapshotSameTime = await getDocs(timeSlotQuery);
 
         if (!querySnapshotSameTime.empty) {
-            setError('This time slot is already booked. Please choose another time.');
+            setError('Ce rendez-vous est déjà réservé. Veuillez choisir un autre horaire.');
             return;
         }
 
@@ -168,7 +170,7 @@ const BookAppointment = () => {
 
     return (
         <div className='w-[500px] h-[80vh] flex justify-center items-center bg-white rounded-lg'>
-            {error && <Typography color="error">{error}</Typography>}
+
             <form onSubmit={handleSubmit} noValidate>
                 <TextField
                     fullWidth
@@ -202,6 +204,17 @@ const BookAppointment = () => {
                         placeholderText="Select a date and time"
                         filterDate={filterPassedTime}
                         customInput={<CustomInput />}
+                        className="custom-datepicker"
+                        popperClassName="custom-datepicker"
+                        popperProps={{
+                            positionFixed: true,
+                        }}
+                        popperContainer={({ children }) => (
+                            <div style={{ zIndex: 20 }}>
+                                {children}
+                            </div>
+                        )}
+                        popperPlacement="bottom-start"
                     />
                 </FormControl>
                 <TextField
@@ -227,6 +240,7 @@ const BookAppointment = () => {
                     <Button type="submit" variant="contained" color="primary" fullWidth>
                         Valider Rendez-vous
                     </Button>
+                    {error && <Typography color="error">{error}</Typography>}
                 </Box>
             </form>
         </div>

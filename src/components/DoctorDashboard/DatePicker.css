@@ -1,0 +1,4 @@
+.custom-datepicker {
+  z-index: 20; /* Ensure it stays above other content */
+  background-color: #fff; /* White background for better clarity */
+}

@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { Typography, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button, Checkbox, Divider, Grid, Select, MenuItem, FormControl, InputLabel, TablePagination } from '@mui/material';
 import { ArrowBack, Edit as EditIcon, Add as AddIcon } from '@mui/icons-material';
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../auth/AuthProvider';
 import { timestampToDate, dateToTimestamp, formatDateForInput, formatDateTimeForInput } from '../../utils/DateUtils';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import './DatePicker.css';
 
 const PatientDetails = ({ moroccanId, onBack }) => {
     const { currentUser } = useAuth();
@@ -12,7 +15,7 @@ const PatientDetails = ({ moroccanId, onBack }) => {
     const [appointments, setAppointments] = useState([]);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [newAppointment, setNewAppointment] = useState({
-        appointmentDate: '',
+        appointmentDate: null,
         notes: '',
         prescribedMedicine: '',
         done: false
@@ -45,20 +48,24 @@ const PatientDetails = ({ moroccanId, onBack }) => {
             }
         };
 
-        const fetchAppointments = async () => {
-            try {
-                const q = query(collection(db, 'appointments'), where('moroccanId', '==', moroccanId), where('doctorId', '==', currentUser.uid));
-                const querySnapshot = await getDocs(q);
-                const appointmentsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setAppointments(appointmentsList);
-            } catch (error) {
-                console.error('Error fetching appointments: ', error);
-            }
-        };
-
         fetchPatientDetails();
         fetchAppointments();
     }, [moroccanId, currentUser]);
+
+    const fetchAppointments = async () => {
+        try {
+            const q = query(collection(db, 'appointments'), where('moroccanId', '==', moroccanId), where('doctorId', '==', currentUser.uid));
+            const querySnapshot = await getDocs(q);
+            const appointmentsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Sort appointments by date
+            appointmentsList.sort((a, b) => b.appointmentDate.toDate() - a.appointmentDate.toDate());
+
+            setAppointments(appointmentsList);
+        } catch (error) {
+            console.error('Error fetching appointments: ', error);
+        }
+    };
 
     const handleEdit = (appointment) => {
         setSelectedAppointment(appointment);
@@ -71,9 +78,9 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                 const appointmentRef = doc(db, 'appointments', selectedAppointment.id);
                 await updateDoc(appointmentRef, {
                     ...selectedAppointment,
-                    appointmentDate: dateToTimestamp(selectedAppointment.appointmentDate)
+                    patientName: patient.patientName  // Ensure patient name is updated here
                 });
-                setAppointments(appointments.map(app => app.id === selectedAppointment.id ? selectedAppointment : app));
+                await fetchAppointments(); // Fetch updated appointments
                 setOpenAppointmentDialog(false);
             } catch (error) {
                 console.error('Error updating appointment:', error);
@@ -87,17 +94,18 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                 ...newAppointment,
                 moroccanId: patient.moroccanId,
                 doctorId: currentUser.uid,
-                appointmentDate: dateToTimestamp(new Appointment.appointmentDate),
+                patientName: patient.patientName,  // Add patient name here
+                appointmentDate: dateToTimestamp(newAppointment.appointmentDate),
                 createdDate: Timestamp.fromDate(new Date())
             });
             setNewAppointment({
-                appointmentDate: '',
+                appointmentDate: null,
                 notes: '',
                 prescribedMedicine: '',
                 done: false
             });
             setOpenAddAppointmentDialog(false);
-            fetchAppointments();
+            await fetchAppointments(); // Fetch updated appointments
         } catch (error) {
             console.error('Error adding appointment:', error);
         }
@@ -126,7 +134,6 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                     allergies: editablePatient.allergies,
                     surgicalHistory: editablePatient.surgicalHistory,
                     toxicHabits: editablePatient.toxicHabits,
-                    regularTreatment: editablePatient.regularTreatment,
                     familyHistory: editablePatient.familyHistory,
                 });
                 setPatient(editablePatient);
@@ -147,6 +154,20 @@ const PatientDetails = ({ moroccanId, onBack }) => {
         setEditablePatient({ ...editablePatient, [name]: value });
     };
 
+    const handleDateChange = (date) => {
+        setNewAppointment({
+            ...newAppointment,
+            appointmentDate: date
+        });
+    };
+
+    const handleDateEditChange = (date) => {
+        setSelectedAppointment({
+            ...selectedAppointment,
+            appointmentDate: date
+        });
+    };
+
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -156,9 +177,22 @@ const PatientDetails = ({ moroccanId, onBack }) => {
         setPage(0);
     };
 
+    const CustomInput = forwardRef(({ value, onClick }, ref) => (
+        <TextField
+            fullWidth
+            label="Date du rendez-vous"
+            value={value}
+            onClick={onClick}
+            ref={ref}
+            margin="normal"
+            InputLabelProps={{ shrink: true }}
+            className="custom-datepicker-container"
+        />
+    ));
+
     return (
-        <div className='w-full h-[80vh] w-full flex justify-start items-center flex-col bg-white rounded-lg mt-12'>
-            <div className='w-full flex justify-between items-center flex-row mb-10'>
+        <div className='w-full h-[80vh] flex justify-start items-center flex-col bg-white rounded-lg'>
+            <div className='w-full flex justify-between items-center flex-row'>
                 <IconButton onClick={onBack}>
                     <ArrowBack />
                 </IconButton>
@@ -168,7 +202,7 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                 </IconButton>
             </div>
             {patient && (
-                <div className='w-full p-x-4'>
+                <div className='w-full p-x-4 mt-6'>
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                             <Box>
@@ -200,16 +234,24 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                             </Box>
                         </Grid>
                     </Grid>
-                    <Divider sx={{ my: 6 }} />
-                    <Typography variant="h5" mb={2} textAlign="center">Rendez-vous</Typography>
-                    <IconButton color="primary" onClick={() => setOpenAddAppointmentDialog(true)}>
-                        <AddIcon /> Ajouter un rendez-vous
-                    </IconButton>
+                    <Divider sx={{ my: 4 }} />
+                    <div className='flex justify-between items-center flex-row mb-4'>
+                        <h1 className='font-bold text-2xl'>Rendez-vous</h1>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<AddIcon />}
+                            onClick={() => setOpenAddAppointmentDialog(true)}
+                        >
+                            Ajouter un rendez-vous
+                        </Button>
+                    </div>
                     {appointments.length > 0 ? (
                         <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
                             <Table stickyHeader>
                                 <TableHead>
                                     <TableRow>
+                                        <TableCell>Nom du patient</TableCell>  {/* Add here */}
                                         <TableCell>Date du rendez-vous</TableCell>
                                         <TableCell>Notes</TableCell>
                                         <TableCell>Médicaments prescrits</TableCell>
@@ -220,13 +262,14 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                                 <TableBody>
                                     {appointments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((appointment) => (
                                         <TableRow key={appointment.id}>
+                                            <TableCell>{appointment.patientName}</TableCell>  {/* Add here */}
                                             <TableCell>
                                                 <Typography variant="body1">
                                                     {timestampToDate(appointment.appointmentDate)?.toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}
                                                 </Typography>
                                             </TableCell>
-                                            <TableCell>{appointment.notes}</TableCell>
-                                            <TableCell>{appointment.prescribedMedicine}</TableCell>
+                                            <TableCell sx={{ maxWidth: '200px' }}>{appointment.notes}</TableCell>
+                                            <TableCell sx={{ maxWidth: '200px' }}>{appointment.prescribedMedicine}</TableCell>
                                             <TableCell>{appointment.done ? 'Terminé' : 'En attente'}</TableCell>
                                             <TableCell>
                                                 <IconButton onClick={() => handleEdit(appointment)}>
@@ -236,17 +279,17 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                                         </TableRow>
                                     ))}
                                 </TableBody>
+                                <TablePagination
+                                    component="div"
+                                    count={appointments.length}
+                                    page={page}
+                                    onPageChange={handleChangePage}
+                                    rowsPerPage={rowsPerPage}
+                                    onRowsPerPageChange={handleChangeRowsPerPage}
+                                    rowsPerPageOptions={[2]}
+                                    style={{ display: "flex", width: "100%", justifyContent: "end", alignItems: "center" }}
+                                />
                             </Table>
-                            <TablePagination
-                                component="div"
-                                count={appointments.length}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                rowsPerPage={rowsPerPage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                                rowsPerPageOptions={[2]}
-                                style={{ display: "flex", width: "100%", justifyContent: "end", alignItems: "center" }}
-                            />
                         </TableContainer>
                     ) : (
                         <Typography variant="body1" textAlign="center">Ce patient n'a pas encore de rendez-vous.</Typography>
@@ -257,23 +300,18 @@ const PatientDetails = ({ moroccanId, onBack }) => {
             <Dialog open={openAppointmentDialog} onClose={() => setOpenAppointmentDialog(false)}>
                 <DialogTitle>Modifier le rendez-vous</DialogTitle>
                 <DialogContent>
-                    <TextField
-                        label="Date du rendez-vous"
-                        type="datetime-local"
-                        fullWidth
-                        margin="normal"
-                        value={formatDateTimeForInput(timestampToDate(selectedAppointment?.appointmentDate)) || ''}
-                        onChange={(e) => setSelectedAppointment({
-                            ...selectedAppointment,
-                            appointmentDate: dateToTimestamp(new Date(e.target.value))
-                        })}
-                        InputLabelProps={{
-                            shrink: true,
-                        }}
+                    <DatePicker
+                        selected={timestampToDate(selectedAppointment?.appointmentDate)}
+                        onChange={handleDateEditChange}
+                        showTimeSelect
+                        timeFormat="HH:mm"
+                        timeIntervals={30}
+                        dateFormat="MMMM d, yyyy h:mm aa"
+                        customInput={<CustomInput />}
                     />
                     <TextField
                         label="Notes"
-                        fullWidth
+                        fullWidth={true}
                         multiline
                         margin="normal"
                         value={selectedAppointment?.notes || ''}
@@ -303,17 +341,26 @@ const PatientDetails = ({ moroccanId, onBack }) => {
 
             <Dialog open={openAddAppointmentDialog} onClose={() => setOpenAddAppointmentDialog(false)} maxWidth="md" fullWidth>
                 <DialogTitle>Ajouter un rendez-vous</DialogTitle>
-                <DialogContent dividers>
-                    <TextField
-                        label="Date du rendez-vous"
-                        type="datetime-local"
-                        fullWidth
-                        margin="normal"
-                        value={newAppointment.appointmentDate}
-                        onChange={e => setNewAppointment({ ...newAppointment, appointmentDate: new Date(e.target.value) })}
-                        InputLabelProps={{
-                            shrink: true,
+                <DialogContent dividers className='flex justify-center items-start flex-col h-[400px]'>
+                    <DatePicker
+                        selected={newAppointment.appointmentDate}
+                        onChange={handleDateChange}
+                        showTimeSelect
+                        timeFormat="HH:mm"
+                        timeIntervals={30}
+                        dateFormat="MMMM d, yyyy h:mm aa"
+                        customInput={<CustomInput />}
+                        className="custom-datepicker"
+                        popperClassName="custom-datepicker"
+                        popperProps={{
+                            positionFixed: true,
                         }}
+                        popperContainer={({ children }) => (
+                            <div style={{ zIndex: 20 }}>
+                                {children}
+                            </div>
+                        )}
+                        popperPlacement="bottom-start"
                     />
                     <TextField
                         label="Notes"
@@ -389,15 +436,40 @@ const PatientDetails = ({ moroccanId, onBack }) => {
                             <Typography variant="h6" sx={{ mt: 2 }}>Antécédents du patient:</Typography>
                             <TextField label="Personnels" name="personalHistory" fullWidth margin="normal" value={editablePatient?.personalHistory || ''} onChange={handleChange} />
                             <TextField label="Allergies" name="allergies" fullWidth margin="normal" value={editablePatient?.allergies || ''} onChange={handleChange} />
-                            <TextField label="Chirurgicaux" name="surgicalHistory" fullWidth margin="normal" value={editablePatient?.surgicalHistory || ''} onChange={handleChange} />
-                            <TextField label="Habitudes toxiques" name="toxicHabits" fullWidth margin="normal" value={editablePatient?.toxicHabits || ''} onChange={handleChange} />
-                            <TextField label="Familiaux" name="familyHistory" fullWidth margin="normal" value={editablePatient?.familyHistory || ''} onChange={handleChange} />
+                            <TextField
+                                label="Chirurgicaux"
+                                name="surgicalHistory"
+                                fullWidth
+                                margin="normal"
+                                value={editablePatient?.surgicalHistory || ''}
+                                onChange={handleChange}
+                            />
+                            <TextField
+                                label="Habitudes toxiques"
+                                name="toxicHabits"
+                                fullWidth
+                                margin="normal"
+                                value={editablePatient?.toxicHabits || ''}
+                                onChange={handleChange}
+                            />
+                            <TextField
+                                label="Familiaux"
+                                name="familyHistory"
+                                fullWidth
+                                margin="normal"
+                                value={editablePatient?.familyHistory || ''}
+                                onChange={handleChange}
+                            />
                         </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCancelEditPatient} color="secondary">Annuler</Button>
-                    <Button onClick={handleSavePatient} color="primary">Enregistrer</Button>
+                    <Button onClick={handleCancelEditPatient} color="secondary">
+                        Annuler
+                    </Button>
+                    <Button onClick={handleSavePatient} color="primary">
+                        Enregistrer
+                    </Button>
                 </DialogActions>
             </Dialog>
         </div>

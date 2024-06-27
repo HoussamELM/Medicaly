@@ -4,7 +4,7 @@ import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 const PatientList = ({ patients, appointments, handleEditPatient, handleDeletePatient, setSelectedPatient }) => {
     return (
-        <TableContainer component={Paper} sx={{ mt: 2 }}>
+        <TableContainer component={Paper} sx={{ mt: 2, height: "570px" }}>
             <Table>
                 <TableHead>
                     <TableRow>
@@ -15,7 +15,7 @@ const PatientList = ({ patients, appointments, handleEditPatient, handleDeletePa
                         <TableCell>Actions</TableCell>
                     </TableRow>
                 </TableHead>
-                <TableBody>
+                <TableBody >
                     {patients.map((patient) => {
                         const patientAppointments = appointments.filter(app => app.moroccanId === patient.moroccanId);
                         const pastAppointments = patientAppointments.filter(app => app.done);

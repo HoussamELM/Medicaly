@@ -20,7 +20,6 @@ const EditPatientDialog = ({ open, handleClose, handleSave, patientData, setPati
             allergies: '',
             surgicalHistory: '',
             toxicHabits: '',
-            regularTreatment: '',
             familyHistory: '',
         };
     }
@@ -170,15 +169,6 @@ const EditPatientDialog = ({ open, handleClose, handleSave, patientData, setPati
                     type="text"
                     fullWidth
                     value={patientData.toxicHabits || ''}
-                    onChange={handleInputChange}
-                />
-                <TextField
-                    margin="dense"
-                    label="Traitement habituel"
-                    name="regularTreatment"
-                    type="text"
-                    fullWidth
-                    value={patientData.regularTreatment || ''}
                     onChange={handleInputChange}
                 />
                 <TextField

@@ -3,12 +3,14 @@ import {
     TextField, Box, Tabs, Tab, Button, InputAdornment, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, Container, Typography
 } from '@mui/material';
 import { CSVLink } from 'react-csv';
+import { writeBatch } from 'firebase/firestore';
 import { Search as SearchIcon } from '@mui/icons-material';
-import { collection, getDocs, getDoc, query, where, runTransaction, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, getDoc, query, where, runTransaction, doc, updateDoc, Timestamp, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../auth/AuthProvider';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
+import Papa from 'papaparse';
 import PatientDetails from './PatientDetails';
 import CalendarView from './CalendarView';
 import AddPatient from './AddPatient';
@@ -23,6 +25,14 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import ContactsIcon from '@mui/icons-material/Contacts';
+
+const parseDate = (dateString) => {
+    const [datePart, timePart, period] = dateString.split(/[\s,:]+/);
+    const [month, day, year] = datePart.split('/');
+    const [hours, minutes] = [parseInt(timePart[0]), parseInt(timePart[1])];
+    const parsedHours = period === 'PM' && hours < 12 ? hours + 12 : hours;
+    return new Date(year, month - 1, day, parsedHours, minutes);
+};
 
 const DoctorDashboard = () => {
     const { currentUser, doctorName } = useAuth();
@@ -50,12 +60,23 @@ const DoctorDashboard = () => {
                 const patientSnapshot = await getDocs(patientQuery);
                 const patientsList = patientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setPatients(patientsList);
-                setAllPatients(patientsList); // Keep a copy of all patients for search functionality
+                setAllPatients(patientsList);
                 setExportData(patientsList.map(patient => ({
                     "Nom prénom": patient.patientName,
                     "CIN": patient.moroccanId,
                     "Groupe sanguin": patient.bloodGroup,
-                    // Include additional fields as needed
+                    "Date de naissance": patient.dateOfBirth ? patient.dateOfBirth.toDate().toLocaleString() : 'N/A',
+                    "Sexe": patient.gender,
+                    "Téléphone portable": patient.mobilePhone,
+                    "Téléphone fixe": patient.landlinePhone,
+                    "Couverture sociale": patient.socialCoverage,
+                    "Profession": patient.profession,
+                    "Adresse": patient.city,
+                    "Personnels": patient.personalHistory,
+                    "Allergies": patient.allergies,
+                    "Chirurgicaux": patient.surgicalHistory,
+                    "Habitudes toxiques": patient.toxicHabits,
+                    "Familiaux": patient.familyHistory,
                 })));
             } catch (error) {
                 console.error('Error fetching patients:', error);
@@ -67,6 +88,7 @@ const DoctorDashboard = () => {
                 const appointmentQuery = query(collection(db, 'appointments'), where('doctorId', '==', currentUser.uid));
                 const appointmentSnapshot = await getDocs(appointmentQuery);
                 const appointmentsList = appointmentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                appointmentsList.sort((a, b) => a.appointmentDate.toDate() - b.appointmentDate.toDate());
                 setAppointments(appointmentsList);
             } catch (error) {
                 console.error('Error fetching appointments:', error);
@@ -126,7 +148,6 @@ const DoctorDashboard = () => {
                 allergies: updatedPatientData.allergies,
                 surgicalHistory: updatedPatientData.surgicalHistory,
                 toxicHabits: updatedPatientData.toxicHabits,
-                regularTreatment: updatedPatientData.regularTreatment,
                 familyHistory: updatedPatientData.familyHistory,
             });
 
@@ -140,6 +161,8 @@ const DoctorDashboard = () => {
         } catch (error) {
             console.error('Erreur de mise à jour du patient:', error);
             setInfoMessage('Erreur de mise à jour du patient.');
+            //log patient data
+            console.log(updatedPatientData);
         }
     };
 
@@ -207,7 +230,6 @@ const DoctorDashboard = () => {
                 done: updatedAppointmentData.done,
                 notes: updatedAppointmentData.notes,
                 prescribedMedicine: updatedAppointmentData.prescribedMedicine,
-                appointmentDate: updatedAppointmentData.appointmentDate ? Timestamp.fromDate(updatedAppointmentData.appointmentDate) : null,
             });
 
             setShowEditAppointmentDialog(false);
@@ -241,6 +263,63 @@ const DoctorDashboard = () => {
         setPage(0);
     };
 
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            Papa.parse(file, {
+                complete: handleFileParseComplete,
+                header: true,
+                skipEmptyLines: true // Skip empty lines to prevent errors.
+            });
+        }
+    };
+
+    const handleFileParseComplete = async (results) => {
+        const data = results.data.filter(row => row.CIN && row.CIN.trim());
+
+        if (data.length === 0) {
+            setInfoMessage('Le fichier CSV ne contient aucun patient valide.');
+            return;
+        }
+
+        try {
+            const batch = writeBatch(db);
+
+            data.forEach((patient) => {
+                const patientRef = doc(db, 'patients', patient.CIN);
+                batch.set(patientRef, {
+                    patientName: patient['Nom prénom'],
+                    moroccanId: patient.CIN,
+                    bloodGroup: patient['Groupe sanguin'],
+                    dateOfBirth: patient['Date de naissance'] ? Timestamp.fromDate(parseDate(patient['Date de naissance'])) : null,
+                    gender: patient.Sexe,
+                    mobilePhone: patient['Téléphone portable'],
+                    landlinePhone: patient['Téléphone fixe'],
+                    socialCoverage: patient['Couverture sociale'],
+                    profession: patient.Profession,
+                    city: patient.Adresse,
+                    personalHistory: patient.Personnels,
+                    allergies: patient.Allergies,
+                    surgicalHistory: patient.Chirurgicaux,
+                    toxicHabits: patient['Habitudes toxiques'],
+                    familyHistory: patient.Familiaux,
+                    doctorId: currentUser.uid,
+                    dateRecorded: Timestamp.fromDate(new Date())
+                });
+            });
+
+            await batch.commit();
+            setInfoMessage('Patients importés avec succès!');
+            const patientQuery = query(collection(db, 'patients'), where('doctorId', '==', currentUser.uid));
+            const patientSnapshot = await getDocs(patientQuery);
+            setPatients(patientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+        } catch (error) {
+            console.error('Erreur d\'importation des patients:', error);
+            setInfoMessage('Erreur d\'importation des patients.');
+        }
+    };
+
     function capitalizeFirstLetter(string) {
         if (!string) return '';
         return string.charAt(0).toUpperCase() + string.slice(1);
@@ -267,11 +346,6 @@ const DoctorDashboard = () => {
                     <hr className='border-slate-200 w-[60%] my-8' />
                 </div>
                 <div className='w-[70%] h-full flex justify-start items-start flex-col gap-3 pt-2'>
-                    {/*<Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered orientation='vertical' sx={{ width: "100%", alignItems: "start" }} style={{ width: 250, float: 'left' }}>
-                        <Tab icon={<ContactsIcon />} iconPosition="start" label="Gestion des Patients" />
-                        <Tab icon={<EventAvailableIcon />} iconPosition="start" label="Mes Rendez-vous &nbsp; &nbsp; &nbsp; &nbsp;" />
-                        <Tab icon={<CalendarMonthIcon />} iconPosition="start" label="Mon Calendrier &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;" />
-                    </Tabs>*/}
                     <ul className='flex justify-center items-center flex-col gap-2 w-[100%]'>
                         <li className={`w-full ${tabValue === 0 ? 'selected-tab bg-gray-100 rounded-lg' : ''}`}>
                             <Button
@@ -280,7 +354,7 @@ const DoctorDashboard = () => {
                                 onClick={() => { setTabValue(0); }}
                                 color='tabs'
                             >
-                                <ContactsIcon color='primary' />
+                                <ContactsIcon color={`${tabValue === 0 ? 'primary' : 'gray'}`} />
                                 <p className='w-full text-left ml-3'>
                                     Gestion des Patients
                                 </p>
@@ -293,7 +367,7 @@ const DoctorDashboard = () => {
                                 onClick={() => { setTabValue(1); }}
                                 color='tabs'
                             >
-                                <EventAvailableIcon color='primary' />
+                                <EventAvailableIcon color={`${tabValue === 1 ? 'primary' : 'gray'}`} />
                                 <p className='w-full text-left ml-3'>
                                     Mes Rendez-vous
                                 </p>
@@ -305,7 +379,7 @@ const DoctorDashboard = () => {
                                 sx={{ borderRadius: '10px', textTransform: "none" }}
                                 onClick={() => { setTabValue(2); }}
                                 color='tabs'>
-                                <CalendarMonthIcon color='primary' />
+                                <CalendarMonthIcon color={`${tabValue === 2 ? 'primary' : 'gray'}`} />
                                 <p className='w-full text-left ml-3'>
                                     Mon Calendrier
                                 </p>
@@ -315,12 +389,17 @@ const DoctorDashboard = () => {
                 </div>
                 <div className='flex justify-center items-center flex-col w-full gap-4'>
                     <div className='flex justify-center items-center flex-col gap-3 w-[70%]'>
+                        {infoMessage && <Alert onClose={() => setInfoMessage(null)} severity="info">{infoMessage}</Alert>}
                         <Button variant="contained" size="large" color="secondary" onClick={() => setShowAddPatient(true)} fullWidth={true} sx={{ borderRadius: '10px', textTransform: "none" }}>
                             Ajouter Patient
                         </Button>
                     </div>
                     <hr className='border-slate-200 w-[60%] my-2' />
-                    <div className='flex justify-center items-center flex-col gap-2 w-[100%]' >
+                    <div className='flex justify-center items-center flex-col gap-4 w-[100%]' >
+                        <Button variant="contained" component="label" size="large" color="primary" className='w-[70%]' sx={{ borderRadius: '10px', textTransform: "none" }}>
+                            Importer via CSV
+                            <input type="file" accept=".csv" hidden onChange={handleFileChange} />
+                        </Button>
                         <CSVLink data={exportData} filename={"patients_data.csv"} className='w-[70%]'>
                             <Button variant="contained" color="gray" fullWidth={true} size="large" sx={{ borderRadius: '10px', textTransform: "none" }}>
                                 Exporter via CSV
@@ -330,9 +409,9 @@ const DoctorDashboard = () => {
                     </div>
                 </div>
             </div>
-            <div className='flex justify-center items-center gap-6 flex-col w-[75%] h-[80vh] p-[30px]'>
+            <div className='flex justify-start items-center gap-6 flex-col w-[75%] h-[80vh] p-[30px] mt-12'>
 
-                {infoMessage && <Alert onClose={() => setInfoMessage(null)} severity="info">{infoMessage}</Alert>}
+
                 {selectedPatient ? (
                     <PatientDetails moroccanId={selectedPatient} onBack={() => setSelectedPatient(null)} />
                 ) : (
@@ -379,15 +458,6 @@ const DoctorDashboard = () => {
                                 <AppointmentsList
                                     appointments={appointments}
                                     handleEditAppointment={handleEditAppointment}
-                                />
-                                <TablePagination
-                                    component="div"
-                                    count={patients.length}
-                                    page={page}
-                                    onPageChange={handleChangePage}
-                                    rowsPerPage={rowsPerPage}
-                                    rowsPerPageOptions={[]}
-                                    style={{ display: "flex", width: "100%", justifyContent: "end", alignItems: "center" }}
                                 />
                             </>
                         )}

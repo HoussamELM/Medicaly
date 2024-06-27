@@ -23,7 +23,6 @@ const AddPatient = ({ onPatientAdded }) => {
         allergies: '',
         surgicalHistory: '',
         toxicHabits: '',
-        regularTreatment: '',
         familyHistory: '',
     });
     const [successMessage, setSuccessMessage] = useState(null);
@@ -216,16 +215,6 @@ const AddPatient = ({ onPatientAdded }) => {
                         label="Habitudes toxiques (alcool, fumeur...)"
                         name="toxicHabits"
                         value={patientData.toxicHabits}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <TextField
-                        label="Traitement habituel"
-                        name="regularTreatment"
-                        value={patientData.regularTreatment}
                         onChange={handleInputChange}
                         fullWidth
                         margin="normal"
